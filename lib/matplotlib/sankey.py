@@ -33,7 +33,6 @@ __version__ = "2011/09/16"
 #   --Allowed the diagram to be rotated
 
 import numpy as np
-import warnings
 
 from matplotlib.cbook import iterable, Bunch
 from matplotlib.path import Path
