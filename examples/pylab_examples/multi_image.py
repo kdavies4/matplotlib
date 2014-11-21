@@ -19,8 +19,8 @@ cmap = cm.cool
 
 figtitle = 'Multiple images'
 t = fig.text(0.5, 0.95, figtitle,
-               horizontalalignment='center',
-               fontproperties=FontProperties(size=16))
+             horizontalalignment='center',
+             fontproperties=FontProperties(size=16))
 
 cax = fig.add_axes([0.2, 0.08, 0.6, 0.04])
 
@@ -38,7 +38,7 @@ for i in range(Nr):
             a.set_xticklabels([])
         # Make some fake data with a range that varies
         # somewhat from one plot to the next.
-        data =((1+i+j)/10.0)*rand(10,20)*1e-6
+        data = ((1 + i + j)/10.0)*rand(10, 20)*1e-6
         dd = ravel(data)
         # Manually find the min and max of all colors for
         # use in setting the color scale.
@@ -51,10 +51,13 @@ for i in range(Nr):
 # Set the first image as the master, with all the others
 # observing it for changes in cmap or norm.
 
-class ImageFollower:
+
+class ImageFollower(object):
     'update image in response to changes in clim or cmap on another image'
+
     def __init__(self, follower):
         self.follower = follower
+
     def __call__(self, leader):
         self.follower.set_cmap(leader.get_cmap())
         self.follower.set_clim(leader.get_clim())
@@ -75,9 +78,3 @@ axes(ax[0])     # Return the current axes to the first one,
 sci(images[0])  # because the current image must be in current axes.
 
 show()
-
-
-
-
-
-

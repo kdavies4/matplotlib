@@ -21,6 +21,7 @@ import io
 import json
 import os
 import random
+import sys
 import socket
 import threading
 
@@ -39,6 +40,7 @@ from matplotlib import backend_bases
 from matplotlib.figure import Figure
 from matplotlib._pylab_helpers import Gcf
 from . import backend_webagg_core as core
+from .backend_nbagg import TimerTornado
 
 
 def new_figure_manager(num, *args, **kwargs):
@@ -94,32 +96,6 @@ class ServerThread(threading.Thread):
         tornado.ioloop.IOLoop.instance().start()
 
 webagg_server_thread = ServerThread()
-
-
-class TimerTornado(backend_bases.TimerBase):
-    def _timer_start(self):
-        self._timer_stop()
-        if self._single:
-            ioloop = tornado.ioloop.IOLoop.instance()
-            self._timer = ioloop.add_timeout(
-                datetime.timedelta(milliseconds=self.interval),
-                self._on_timer)
-        else:
-            self._timer = tornado.ioloop.PeriodicCallback(
-                self._on_timer,
-                self.interval)
-        self._timer.start()
-
-    def _timer_stop(self):
-        if self._timer is not None:
-            self._timer.stop()
-            self._timer = None
-
-    def _timer_set_interval(self):
-        # Only stop and restart it if the timer has already been started
-        if self._timer is not None:
-            self._timer_stop()
-            self._timer_start()
 
 
 class FigureCanvasWebAgg(core.FigureCanvasWebAggCore):
@@ -230,15 +206,13 @@ class WebAggApplication(tornado.web.Application):
 
         def open(self, fignum):
             self.fignum = int(fignum)
-            manager = Gcf.get_fig_manager(self.fignum)
-            manager.add_web_socket(self)
+            self.manager = Gcf.get_fig_manager(self.fignum)
+            self.manager.add_web_socket(self)
             if hasattr(self, 'set_nodelay'):
                 self.set_nodelay(True)
 
         def on_close(self):
-            manager = Gcf.get_fig_manager(self.fignum)
-            if manager is not None:
-                manager.remove_web_socket(self)
+            self.manager.remove_web_socket(self)
 
         def on_message(self, message):
             message = json.loads(message)
@@ -360,11 +334,13 @@ class WebAggApplication(tornado.web.Application):
         launched. We may end up with two concurrently running loops in that
         unlucky case with all the expected consequences.
         """
-        print("Press Ctrl+C to stop server")
+        print("Press Ctrl+C to stop WebAgg server")
+        sys.stdout.flush()
         try:
             tornado.ioloop.IOLoop.instance().start()
         except KeyboardInterrupt:
-            print("Server stopped")
+            print("Server is stopped")
+            sys.stdout.flush()
         finally:
             cls.started = False
 

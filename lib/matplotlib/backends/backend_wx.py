@@ -102,7 +102,7 @@ def debug_on_error(type, value, tb):
     print()
     pdb.pm()  # jdh uncomment
 
-class fake_stderr:
+class fake_stderr(object):
     """Wx does strange things with stderr, as it makes the assumption that there
     is probably no console. This redirects stderr to the console, since we know
     that there is one!"""
@@ -466,7 +466,7 @@ class GraphicsContextWx(GraphicsContextBase):
     bitmap object that is passed in.
 
     The base GraphicsContext stores colors as a RGB tuple on the unit
-    interval, eg, (0.5, 0.0, 1.0).  wxPython uses an int interval, but
+    interval, e.g., (0.5, 0.0, 1.0).  wxPython uses an int interval, but
     since wxPython colour management is rather simple, I have not chosen
     to implement a separate colour manager class.
     """

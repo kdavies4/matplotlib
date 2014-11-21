@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
+
 def generate(X, Y, phi):
     R = 1 - np.sqrt(X**2 + Y**2)
     return np.cos(2 * np.pi * X + phi) * R
@@ -35,4 +36,4 @@ for phi in np.linspace(0, 360 / 2 / np.pi, 100):
 
     plt.pause(.001)
 
-print ('FPS: %f' % (100 / (time.time() - tstart)))
+print('FPS: %f' % (100 / (time.time() - tstart)))

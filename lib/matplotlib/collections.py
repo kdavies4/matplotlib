@@ -70,7 +70,7 @@ class Collection(artist.Artist, cm.ScalarMappable):
 
     The use of :class:`~matplotlib.cm.ScalarMappable` is optional.  If
     the :class:`~matplotlib.cm.ScalarMappable` matrix _A is not None
-    (ie a call to set_array has been made), at draw time a call to
+    (i.e., a call to set_array has been made), at draw time a call to
     scalar mappable will be made to set the face colors.
     """
     _offsets = np.array([], np.float_)
@@ -658,6 +658,10 @@ class Collection(artist.Artist, cm.ScalarMappable):
         elif self._is_stroked:
             self._edgecolors = self.to_rgba(self._A, self._alpha)
 
+    def get_fill(self):
+        'return whether fill is set'
+        return self._is_filled
+
     def update_from(self, other):
         'copy properties from other to self'
 
@@ -710,9 +714,30 @@ class _CollectionWithSizes(Collection):
     Base class for collections that have an array of sizes.
     """
     def get_sizes(self):
+        """
+        Returns the sizes of the elements in the collection.  The
+        value represents the 'area' of the element.
+
+        Returns
+        -------
+        sizes : array
+            The 'area' of each element.
+        """
         return self._sizes
 
     def set_sizes(self, sizes, dpi=72.0):
+        """
+        Set the sizes of each member of the collection.
+
+        Parameters
+        ----------
+        sizes : ndarray or None
+            The size to set for each element of the collection.  The
+            value is the 'area' of the element.
+
+        dpi : float
+            The dpi of the canvas. Defaults to 72.0.
+        """
         if sizes is None:
             self._sizes = np.array([])
             self._transforms = np.empty((0, 3, 3))
@@ -724,6 +749,7 @@ class _CollectionWithSizes(Collection):
             self._transforms[:, 1, 1] = scale
             self._transforms[:, 2, 2] = 1.0
 
+    @allow_rasterization
     def draw(self, renderer):
         self.set_sizes(self._sizes, self.figure.dpi)
         Collection.draw(self, renderer)
@@ -788,10 +814,10 @@ class PolyCollection(_CollectionWithSizes):
             for xy in verts:
                 if len(xy):
                     if np.ma.isMaskedArray(xy):
-                        xy = np.ma.concatenate([xy, np.zeros((1, 2))])
+                        xy = np.ma.concatenate([xy, xy[0:1]])
                     else:
                         xy = np.asarray(xy)
-                        xy = np.concatenate([xy, np.zeros((1, 2))])
+                        xy = np.concatenate([xy, xy[0:1]])
                     codes = np.empty(xy.shape[0], dtype=mpath.Path.code_type)
                     codes[:] = mpath.Path.LINETO
                     codes[0] = mpath.Path.MOVETO
@@ -905,6 +931,15 @@ class RegularPolyCollection(_CollectionWithSizes):
     def get_rotation(self):
         return self._rotation
 
+    @allow_rasterization
+    def draw(self, renderer):
+        self.set_sizes(self._sizes, self.figure.dpi)
+        self._transforms = [
+            transforms.Affine2D(x).rotate(-self._rotation).get_matrix()
+            for x in self._transforms
+        ]
+        Collection.draw(self, renderer)
+
 
 class StarPolygonCollection(RegularPolyCollection):
     """
@@ -956,7 +991,7 @@ class LineCollection(Collection):
             can be a different length.
 
         *colors*
-            must be a sequence of RGBA tuples (eg arbitrary color
+            must be a sequence of RGBA tuples (e.g., arbitrary color
             strings, etc, not allowed).
 
         *antialiaseds*
@@ -999,7 +1034,7 @@ class LineCollection(Collection):
 
         The use of :class:`~matplotlib.cm.ScalarMappable` is optional.
         If the :class:`~matplotlib.cm.ScalarMappable` array
-        :attr:`~matplotlib.cm.ScalarMappable._A` is not None (ie a call to
+        :attr:`~matplotlib.cm.ScalarMappable._A` is not None (i.e., a call to
         :meth:`~matplotlib.cm.ScalarMappable.set_array` has been made), at
         draw time a call to scalar mappable will be made to set the colors.
         """
@@ -1138,7 +1173,7 @@ class EventCollection(LineCollection):
             a single numerical value
 
         *color*
-            must be a sequence of RGBA tuples (eg arbitrary color
+            must be a sequence of RGBA tuples (e.g., arbitrary color
             strings, etc, not allowed).
 
         *linestyle* [ 'solid' | 'dashed' | 'dashdot' | 'dotted' ]
@@ -1159,7 +1194,7 @@ class EventCollection(LineCollection):
 
         The use of :class:`~matplotlib.cm.ScalarMappable` is optional.
         If the :class:`~matplotlib.cm.ScalarMappable` array
-        :attr:`~matplotlib.cm.ScalarMappable._A` is not None (ie a call to
+        :attr:`~matplotlib.cm.ScalarMappable._A` is not None (i.e., a call to
         :meth:`~matplotlib.cm.ScalarMappable.set_array` has been made), at
         draw time a call to scalar mappable will be made to set the colors.
 
@@ -1438,8 +1473,8 @@ class EllipseCollection(Collection):
         self._transforms = np.zeros((len(self._widths), 3, 3))
         widths = self._widths * sc
         heights = self._heights * sc
-        sin_angle = np.cos(np.deg2rad(self._angles))
-        cos_angle = np.cos(np.deg2rad(self._angles))
+        sin_angle = np.sin(self._angles)
+        cos_angle = np.cos(self._angles)
         self._transforms[:, 0, 0] = widths * cos_angle
         self._transforms[:, 0, 1] = heights * -sin_angle
         self._transforms[:, 1, 0] = widths * sin_angle
@@ -1486,7 +1521,7 @@ class PatchCollection(Collection):
 
         The use of :class:`~matplotlib.cm.ScalarMappable` is optional.
         If the :class:`~matplotlib.cm.ScalarMappable` matrix _A is not
-        None (ie a call to set_array has been made), at draw time a
+        None (i.e., a call to set_array has been made), at draw time a
         call to scalar mappable will be made to set the face colors.
         """
 
@@ -1496,21 +1531,13 @@ class PatchCollection(Collection):
                     return patch.get_facecolor()
                 return [0, 0, 0, 0]
 
-            facecolors = [determine_facecolor(p) for p in patches]
-            edgecolors = [p.get_edgecolor() for p in patches]
-            linewidths = [p.get_linewidth() for p in patches]
-            linestyles = [p.get_linestyle() for p in patches]
-            antialiaseds = [p.get_antialiased() for p in patches]
+            kwargs['facecolors'] = [determine_facecolor(p) for p in patches]
+            kwargs['edgecolors'] = [p.get_edgecolor() for p in patches]
+            kwargs['linewidths'] = [p.get_linewidth() for p in patches]
+            kwargs['linestyles'] = [p.get_linestyle() for p in patches]
+            kwargs['antialiaseds'] = [p.get_antialiased() for p in patches]
 
-            Collection.__init__(
-                self,
-                edgecolors=edgecolors,
-                facecolors=facecolors,
-                linewidths=linewidths,
-                linestyles=linestyles,
-                antialiaseds=antialiaseds)
-        else:
-            Collection.__init__(self, **kwargs)
+        Collection.__init__(self, **kwargs)
 
         self.set_paths(patches)
 

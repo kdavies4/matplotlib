@@ -4,10 +4,13 @@ from matplotlib.colors import colorConverter
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-cc = lambda arg: colorConverter.to_rgba(arg, alpha=0.6)
+
+def cc(arg):
+    return colorConverter.to_rgba(arg, alpha=0.6)
 
 xs = np.arange(0, 10, 0.4)
 verts = []
@@ -17,8 +20,8 @@ for z in zs:
     ys[0], ys[-1] = 0, 0
     verts.append(list(zip(xs, ys)))
 
-poly = PolyCollection(verts, facecolors = [cc('r'), cc('g'), cc('b'),
-                                           cc('y')])
+poly = PolyCollection(verts, facecolors=[cc('r'), cc('g'), cc('b'),
+                                         cc('y')])
 poly.set_alpha(0.7)
 ax.add_collection3d(poly, zs=zs, zdir='y')
 
@@ -30,4 +33,3 @@ ax.set_zlabel('Z')
 ax.set_zlim3d(0, 1)
 
 plt.show()
-

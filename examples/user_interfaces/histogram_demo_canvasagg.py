@@ -15,7 +15,7 @@ from matplotlib.mlab import normpdf
 from numpy.random import randn
 import numpy
 
-fig = Figure(figsize=(5,4), dpi=100)
+fig = Figure(figsize=(5, 4), dpi=100)
 ax = fig.add_subplot(111)
 
 canvas = FigureCanvasAgg(fig)
@@ -27,7 +27,7 @@ x = mu + sigma*randn(10000)
 n, bins, patches = ax.hist(x, 50, normed=1)
 
 # add a 'best fit' line
-y = normpdf( bins, mu, sigma)
+y = normpdf(bins, mu, sigma)
 line, = ax.plot(bins, y, 'r--')
 line.set_linewidth(1)
 
@@ -35,8 +35,8 @@ ax.set_xlabel('Smarts')
 ax.set_ylabel('Probability')
 ax.set_title(r'$\mathrm{Histogram of IQ: }\mu=100, \sigma=15$')
 
-ax.set_xlim( (40, 160))
-ax.set_ylim( (0, 0.03))
+ax.set_xlim((40, 160))
+ax.set_ylim((0, 0.03))
 
 canvas.draw()
 
@@ -44,7 +44,7 @@ s = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 # get the figure dimensions for creating bitmaps or numpy arrays,
 # etc.
-l,b,w,h = fig.bbox.bounds
+l, b, w, h = fig.bbox.bounds
 w, h = int(w), int(h)
 
 if 0:
@@ -55,8 +55,5 @@ if 0:
 if 0:
     # pass off to PIL
     from PIL import Image
-    im = Image.fromstring( "RGB", (w,h), s)
+    im = Image.fromstring("RGB", (w, h), s)
     im.show()
-
-
-

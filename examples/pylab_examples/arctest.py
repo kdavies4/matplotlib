@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 from pylab import *
 
+
 def f(t):
     'a damped exponential'
     s1 = cos(2*pi*t)
     e1 = exp(-t)
-    return multiply(s1,e1)
+    return multiply(s1, e1)
 
 t1 = arange(0.0, 5.0, .2)
 
@@ -15,4 +16,3 @@ setp(l, 'markersize', 30)
 setp(l, 'markerfacecolor', 'b')
 
 show()
-

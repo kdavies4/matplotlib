@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 
 
 class DataManager(gtk.Window):
-    numRows, numCols = 20,10
+    numRows, numCols = 20, 10
 
     data = random((numRows, numCols))
 
@@ -49,14 +49,13 @@ class DataManager(gtk.Window):
         self.treeview = gtk.TreeView(model)
         self.treeview.set_rules_hint(True)
 
-
         # matplotlib stuff
-        fig = Figure(figsize=(6,4))
+        fig = Figure(figsize=(6, 4))
 
         self.canvas = FigureCanvas(fig)  # a gtk.DrawingArea
         vbox.pack_start(self.canvas, True, True)
         ax = fig.add_subplot(111)
-        self.line, = ax.plot(self.data[0,:], 'go')  # plot the first row
+        self.line, = ax.plot(self.data[0, :], 'go')  # plot the first row
 
         self.treeview.connect('row-activated', self.plot_row)
         sw.add(self.treeview)
@@ -64,22 +63,19 @@ class DataManager(gtk.Window):
         self.add_columns()
 
         self.add_events(gdk.BUTTON_PRESS_MASK |
-                        gdk.KEY_PRESS_MASK|
+                        gdk.KEY_PRESS_MASK |
                         gdk.KEY_RELEASE_MASK)
-
 
     def plot_row(self, treeview, path, view_column):
         ind, = path  # get the index into data
-        points = self.data[ind,:]
+        points = self.data[ind, :]
         self.line.set_ydata(points)
         self.canvas.draw()
 
-
     def add_columns(self):
         for i in range(self.numCols):
-            column = gtk.TreeViewColumn('%d'%i, gtk.CellRendererText(), text=i)
+            column = gtk.TreeViewColumn('%d' % i, gtk.CellRendererText(), text=i)
             self.treeview.append_column(column)
-
 
     def create_model(self):
         types = [float]*self.numCols

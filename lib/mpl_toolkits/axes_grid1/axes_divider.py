@@ -1,11 +1,11 @@
 """
-The axes_divider module provide helper classes to adjust the positions of
-multiple axes at the drawing time.
+The axes_divider module provides helper classes to adjust the positions of
+multiple axes at drawing time.
 
- Divider: this is the class that is used calculates the axes
+ Divider: this is the class that is used to calculate the axes
     position. It divides the given rectangular area into several sub
     rectangles. You initialize the divider by setting the horizontal
-    and vertical list of sizes that the division will be based on. You
+    and vertical lists of sizes that the division will be based on. You
     then use the new_locator method, whose return value is a callable
     object that can be used to set the axes_locator of the axes.
 
@@ -31,7 +31,7 @@ class Divider(object):
     horizontal and vertical lists of sizes
     (:mod:`mpl_toolkits.axes_grid.axes_size`) that the division will
     be based on. You then use the new_locator method to create a
-    callable object that can be used to as the axes_locator of the
+    callable object that can be used as the axes_locator of the
     axes.
     """
 
@@ -49,7 +49,7 @@ class Divider(object):
                     for vertical division
         :param aspect: if True, the overall rectangular area is reduced
                     so that the relative part of the horizontal and
-                    vertical scales have same scale.
+                    vertical scales have the same scale.
         :param anchor: Determine how the reduced rectangle is placed
                        when aspect is True.
         """
@@ -390,7 +390,7 @@ class SubplotDivider(Divider):
 
         # total = rows*cols
         # num -= 1    # convert from matlab to python indexing
-        #             # ie num in range(0,total)
+        #             # i.e., num in range(0,total)
         # if num >= total:
         #     raise ValueError( 'Subplot number exceeds total subplots')
         # self._rows = rows
@@ -458,7 +458,7 @@ class SubplotDivider(Divider):
         self.figbox = self.get_subplotspec().get_position(self.figure)
 
     def get_geometry(self):
-        'get the subplot geometry, eg 2,2,3'
+        'get the subplot geometry, e.g., 2,2,3'
         rows, cols, num1, num2 = self.get_subplotspec().get_geometry()
         return rows, cols, num1+1  # for compatibility
 
@@ -554,10 +554,10 @@ class AxesDivider(Divider):
         if pack_start:
             self._horizontal.insert(0, size)
             self._xrefindex += 1
-            locator = self.new_locator(nx=0, ny=0)
+            locator = self.new_locator(nx=0, ny=self._yrefindex)
         else:
             self._horizontal.append(size)
-            locator = self.new_locator(nx=len(self._horizontal)-1, ny=0)
+            locator = self.new_locator(nx=len(self._horizontal)-1, ny=self._yrefindex)
 
         ax = self._get_new_axes(**kwargs)
         ax.set_axes_locator(locator)
@@ -601,10 +601,10 @@ class AxesDivider(Divider):
         if pack_start:
             self._vertical.insert(0, size)
             self._yrefindex += 1
-            locator = self.new_locator(nx=0, ny=0)
+            locator = self.new_locator(nx=self._xrefindex, ny=0)
         else:
             self._vertical.append(size)
-            locator = self.new_locator(nx=0, ny=len(self._vertical)-1)
+            locator = self.new_locator(nx=self._xrefindex, ny=len(self._vertical)-1)
 
         ax = self._get_new_axes(**kwargs)
         ax.set_axes_locator(locator)
@@ -839,7 +839,7 @@ class VBoxDivider(HBoxDivider):
         return mtransforms.Bbox.from_bounds(x1, y1, w1, h1)
 
 
-class LocatableAxesBase:
+class LocatableAxesBase(object):
     def __init__(self, *kl, **kw):
 
         self._axes_class.__init__(self, *kl, **kw)

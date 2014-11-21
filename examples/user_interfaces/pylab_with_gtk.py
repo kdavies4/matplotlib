@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 
 
 fig, ax = plt.subplots()
-plt.plot([1,2,3], 'ro-', label='easy as 1 2 3')
-plt.plot([1,4,9], 'gs--', label='easy as 1 2 3 squared')
+plt.plot([1, 2, 3], 'ro-', label='easy as 1 2 3')
+plt.plot([1, 4, 9], 'gs--', label='easy as 1 2 3 squared')
 plt.legend()
 
 
@@ -20,9 +20,10 @@ toolbar = manager.toolbar
 
 # now let's add a button to the toolbar
 import gtk
-next = 8; #where to insert this in the mpl toolbar
+next = 8  # where to insert this in the mpl toolbar
 button = gtk.Button('Click me')
 button.show()
+
 
 def clicked(button):
     print('hi mom')
@@ -35,7 +36,8 @@ toolitem.set_tooltip(
     'Click me for fun and profit')
 
 toolitem.add(button)
-toolbar.insert(toolitem, next); next +=1
+toolbar.insert(toolitem, next)
+next += 1
 
 # now let's add a widget to the vbox
 label = gtk.Label()
@@ -45,11 +47,12 @@ vbox = manager.vbox
 vbox.pack_start(label, False, False)
 vbox.reorder_child(manager.toolbar, -1)
 
+
 def update(event):
     if event.xdata is None:
         label.set_markup('Drag mouse over axes for position')
     else:
-        label.set_markup('<span color="#ef0000">x,y=(%f, %f)</span>'%(event.xdata, event.ydata))
+        label.set_markup('<span color="#ef0000">x,y=(%f, %f)</span>' % (event.xdata, event.ydata))
 
 plt.connect('motion_notify_event', update)
 

@@ -78,9 +78,9 @@ Here are all the date tickers:
 
     * :class:`DayLocator`: locate specifed days of the month
 
-    * :class:`WeekdayLocator`: Locate days of the week, eg MO, TU
+    * :class:`WeekdayLocator`: Locate days of the week, e.g., MO, TU
 
-    * :class:`MonthLocator`: locate months, eg 7 for july
+    * :class:`MonthLocator`: locate months, e.g., 7 for july
 
     * :class:`YearLocator`: locate years that are multiples of base
 
@@ -244,7 +244,7 @@ def _from_ordinalf(x, tz=None):
 _from_ordinalf_np_vectorized = np.vectorize(_from_ordinalf)
 
 
-class strpdate2num:
+class strpdate2num(object):
     """
     Use this class to parse date strings to matplotlib datenums when
     you know the date format string of the date you are parsing.  See
@@ -407,7 +407,7 @@ class DateFormatter(ticker.Formatter):
             raise ValueError('DateFormatter found a value of x=0, which is '
                              'an illegal date.  This usually occurs because '
                              'you have not informed the axis that it is '
-                             'plotting dates, eg with ax.xaxis_date()')
+                             'plotting dates, e.g., with ax.xaxis_date()')
         dt = num2date(x, self.tz)
         return self.strftime(dt, self.fmt)
 
@@ -520,22 +520,23 @@ class AutoDateFormatter(ticker.Formatter):
     >>> formatter = AutoDateFormatter()
     >>> formatter.scaled[1/(24.*60.)] = '%M:%S' # only show min and sec
 
-    Custom `FunctionFormatter`s can also be used. The following example shows
-    how to use a custom format function to strip trailing zeros from decimal
-    seconds and adds the date to the first ticklabel::
+    A custom :class:`~matplotlib.ticker.FuncFormatter` can also be used.
+    The following example shows how to use a custom format function to strip
+    trailing zeros from decimal seconds and adds the date to the first
+    ticklabel::
 
-    >>> def my_format_function(x, pos=None):
-    ...     x = matplotlib.dates.num2date(x)
-    ...     if pos == 0:
-    ...         fmt = '%D %H:%M:%S.%f'
-    ...     else:
-    ...         fmt = '%H:%M:%S.%f'
-    ...     label = x.strftime(fmt)
-    ...     label = label.rstrip("0")
-    ...     label = label.rstrip(".")
-    ...     return label
-    >>> from matplotlib.ticker import FuncFormatter
-    >>> formatter.scaled[1/(24.*60.)] = FuncFormatter(my_format_function)
+        >>> def my_format_function(x, pos=None):
+        ...     x = matplotlib.dates.num2date(x)
+        ...     if pos == 0:
+        ...         fmt = '%D %H:%M:%S.%f'
+        ...     else:
+        ...         fmt = '%H:%M:%S.%f'
+        ...     label = x.strftime(fmt)
+        ...     label = label.rstrip("0")
+        ...     label = label.rstrip(".")
+        ...     return label
+        >>> from matplotlib.ticker import FuncFormatter
+        >>> formatter.scaled[1/(24.*60.)] = FuncFormatter(my_format_function)
     """
 
     # This can be improved by providing some user-level direction on
@@ -586,7 +587,7 @@ class AutoDateFormatter(ticker.Formatter):
         return result
 
 
-class rrulewrapper:
+class rrulewrapper(object):
 
     def __init__(self, freq, **kwargs):
         self._construct = kwargs.copy()
@@ -898,6 +899,10 @@ class AutoDateLocator(DateLocator):
         'Pick the best locator based on a distance.'
         delta = relativedelta(dmax, dmin)
 
+        # take absolute difference
+        if dmin > dmax:
+            delta = -delta
+
         numYears = (delta.years * 1.0)
         numMonths = (numYears * 12.0) + delta.months
         numDays = (numMonths * 31.0) + delta.days
@@ -1037,7 +1042,7 @@ class YearLocator(DateLocator):
 
 class MonthLocator(RRuleLocator):
     """
-    Make ticks on occurances of each month month, eg 1, 3, 12.
+    Make ticks on occurances of each month month, e.g., 1, 3, 12.
     """
     def __init__(self,  bymonth=None, bymonthday=1, interval=1, tz=None):
         """

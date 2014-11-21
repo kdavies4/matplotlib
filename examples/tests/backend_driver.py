@@ -42,10 +42,10 @@ dirs = dict(files=os.path.join('..', 'lines_bars_and_markers'),
             subplots=os.path.join('..', 'subplots_axes_and_figures'),
             specialty=os.path.join('..', 'specialty_plots'),
             showcase=os.path.join('..', 'showcase'),
-            pylab = os.path.join('..', 'pylab_examples'),
-            api = os.path.join('..', 'api'),
-            units = os.path.join('..', 'units'),
-            mplot3d = os.path.join('..', 'mplot3d'))
+            pylab=os.path.join('..', 'pylab_examples'),
+            api=os.path.join('..', 'api'),
+            units=os.path.join('..', 'units'),
+            mplot3d=os.path.join('..', 'mplot3d'))
 
 
 # files in each dir
@@ -307,15 +307,16 @@ files['mplot3d'] = [
     'wire3d_demo.py',
     ]
 
-# dict from dir to files we know we don't want to test (eg examples
+# dict from dir to files we know we don't want to test (e.g., examples
 # not using pyplot, examples requiring user input, animation examples,
 # examples that may only work in certain environs (usetex examples?),
 # examples that generate multiple figures
 
 excluded = {
-    'pylab' : ['__init__.py', 'toggle_images.py',],
-    'units' : ['__init__.py', 'date_support.py',],
+    'pylab': ['__init__.py', 'toggle_images.py', ],
+    'units': ['__init__.py', 'date_support.py', ],
 }
+
 
 def report_missing(dir, flist):
     'report the py files in dir that are not in flist'
@@ -326,10 +327,11 @@ def report_missing(dir, flist):
 
     exclude = set(excluded.get(dir, []))
     flist = set(flist)
-    missing = list(pyfiles-flist-exclude)
+    missing = list(pyfiles - flist - exclude)
     missing.sort()
     if missing:
-        print ('%s files not tested: %s'%(dir, ', '.join(missing)))
+        print('%s files not tested: %s' % (dir, ', '.join(missing)))
+
 
 def report_all_missing(directories):
     for f in directories:
@@ -339,7 +341,7 @@ def report_all_missing(directories):
 # tests known to fail on a given backend
 
 failbackend = dict(
-    svg = ('tex_demo.py', ),
+    svg=('tex_demo.py', ),
     agg = ('hyperlinks.py', ),
     pdf = ('hyperlinks.py', ),
     ps = ('hyperlinks.py', ),
@@ -348,6 +350,7 @@ failbackend = dict(
 
 try:
     import subprocess
+
     def run(arglist):
         try:
             ret = subprocess.call(arglist)
@@ -359,7 +362,8 @@ except ImportError:
     def run(arglist):
         os.system(' '.join(arglist))
 
-def drive(backend, directories, python=['python'], switches = []):
+
+def drive(backend, directories, python=['python'], switches=[]):
     exclude = failbackend.get(backend, [])
 
     # Clear the destination directory for the examples
@@ -377,12 +381,12 @@ def drive(backend, directories, python=['python'], switches = []):
                  for fname in files[d]]
 
     for fullpath in testcases:
-        print ('\tdriving %-40s' % (fullpath)),
+        print('\tdriving %-40s' % (fullpath))
         sys.stdout.flush()
         fpath, fname = os.path.split(fullpath)
 
         if fname in exclude:
-            print ('\tSkipping %s, known to fail on backend: %s'%backend)
+            print('\tSkipping %s, known to fail on backend: %s' % backend)
             continue
 
         basename, ext = os.path.splitext(fname)
@@ -399,7 +403,7 @@ def drive(backend, directories, python=['python'], switches = []):
                 future_imports = future_imports + ', unicode_literals'
 
         tmpfile.writelines((
-            future_imports+'\n',
+            future_imports + '\n',
             'import sys\n',
             'sys.path.append("%s")\n' % fpath.replace('\\', '\\\\'),
             'import matplotlib\n',
@@ -411,9 +415,9 @@ def drive(backend, directories, python=['python'], switches = []):
         for line in open(fullpath):
             line_lstrip = line.lstrip()
             if (line_lstrip.startswith('from __future__ import') or
-                line_lstrip.startswith('matplotlib.use') or
-                line_lstrip.startswith('savefig') or
-                line_lstrip.startswith('show')):
+                    line_lstrip.startswith('matplotlib.use') or
+                    line_lstrip.startswith('savefig') or
+                    line_lstrip.startswith('show')):
                 continue
             tmpfile.write(line)
         if backend in rcsetup.interactive_bk:
@@ -426,12 +430,13 @@ def drive(backend, directories, python=['python'], switches = []):
         program = [x % {'name': basename} for x in python]
         ret = run(program + [tmpfile_name] + switches)
         end_time = time.time()
-        print ("%s %s" % ((end_time - start_time), ret))
+        print("%s %s" % ((end_time - start_time), ret))
         #os.system('%s %s %s' % (python, tmpfile_name, ' '.join(switches)))
         os.remove(tmpfile_name)
         if ret:
             failures.append(fullpath)
     return failures
+
 
 def parse_options():
     doc = (__doc__ and __doc__.split('\n\n')) or "  "
@@ -465,15 +470,15 @@ def parse_options():
         backends += [be.lower() for be in options.backends.split(',')]
 
     result = Bunch(
-        dirs = options.dirs.split(','),
-        backends = backends or ['agg', 'ps', 'svg', 'pdf', 'template'],
-        clean = options.clean,
-        coverage = options.coverage,
-        valgrind = options.valgrind,
-        switches = switches)
+        dirs=options.dirs.split(','),
+        backends=backends or ['agg', 'ps', 'svg', 'pdf', 'template'],
+        clean=options.clean,
+        coverage=options.coverage,
+        valgrind=options.valgrind,
+        switches=switches)
     if 'pylab_examples' in result.dirs:
         result.dirs[result.dirs.index('pylab_examples')] = 'pylab'
-    #print result
+    #print(result)
     return (result)
 
 if __name__ == '__main__':
@@ -487,14 +492,14 @@ if __name__ == '__main__':
         for d in localdirs:
             if d.lower() not in all_backends_set:
                 continue
-            print ('removing %s'%d)
+            print('removing %s' % d)
             for fname in glob.glob(os.path.join(d, '*')):
                 os.remove(fname)
             os.rmdir(d)
         for fname in glob.glob('_tmp*.py'):
             os.remove(fname)
 
-        print ('all clean...')
+        print('all clean...')
         raise SystemExit
     if options.coverage:
         python = ['coverage.py', '-x']
@@ -508,19 +513,19 @@ if __name__ == '__main__':
 
     report_all_missing(options.dirs)
     for backend in options.backends:
-        print ('testing %s %s' % (backend, ' '.join(options.switches)))
+        print('testing %s %s' % (backend, ' '.join(options.switches)))
         t0 = time.time()
         failures[backend] = \
             drive(backend, options.dirs, python, options.switches)
         t1 = time.time()
-        times[backend] = (t1-t0)/60.0
+        times[backend] = (t1 - t0)/60.0
 
-    # print times
+    #print(times)
     for backend, elapsed in times.items():
-        print ('Backend %s took %1.2f minutes to complete' % (backend, elapsed))
+        print('Backend %s took %1.2f minutes to complete' % (backend, elapsed))
         failed = failures[backend]
         if failed:
-            print ('  Failures: %s' % failed)
+            print('  Failures: %s' % failed)
         if 'template' in times:
-            print ('\ttemplate ratio %1.3f, template residual %1.3f' % (
-                elapsed/times['template'], elapsed-times['template']))
+            print('\ttemplate ratio %1.3f, template residual %1.3f' % (
+                elapsed/times['template'], elapsed - times['template']))

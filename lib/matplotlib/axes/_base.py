@@ -202,7 +202,7 @@ class _process_plot_var_args(object):
             if self.command != 'plot':
                 # the Line2D class can handle unitized data, with
                 # support for post hoc unit changes etc.  Other mpl
-                # artists, eg Polygon which _process_plot_var_args
+                # artists, e.g., Polygon which _process_plot_var_args
                 # also serves on calls to fill, cannot.  So this is a
                 # hack to say: if you are not "plot", which is
                 # creating Line2D, then convert the data now to
@@ -232,7 +232,7 @@ class _process_plot_var_args(object):
 
     def _makeline(self, x, y, kw, kwargs):
         kw = kw.copy()  # Don't modify the original kw.
-        if not 'color' in kw and not 'color' in kwargs:
+        if 'color' not in kw and 'color' not in kwargs:
             kw['color'] = six.next(self.color_cycle)
             # (can't use setdefault because it always evaluates
             # its second argument)
@@ -420,7 +420,7 @@ class _AxesBase(martist.Artist):
 
         self.spines = self._gen_axes_spines()
 
-        # this call may differ for non-sep axes, eg polar
+        # this call may differ for non-sep axes, e.g., polar
         self._init_axis()
 
         if axisbg is None:
@@ -908,12 +908,12 @@ class _AxesBase(martist.Artist):
             )
         self._left_title = mtext.Text(
             x=0.0, y=1.0, text='',
-            fontproperties=props,
+            fontproperties=props.copy(),
             verticalalignment='baseline',
             horizontalalignment='left', )
         self._right_title = mtext.Text(
             x=1.0, y=1.0, text='',
-            fontproperties=props,
+            fontproperties=props.copy(),
             verticalalignment='baseline',
             horizontalalignment='right',
             )
@@ -1423,8 +1423,12 @@ class _AxesBase(martist.Artist):
             len(self.patches)) > 0
 
     def add_artist(self, a):
-        """
-        Add any :class:`~matplotlib.artist.Artist` to the axes.
+        """Add any :class:`~matplotlib.artist.Artist` to the axes.
+
+        Use `add_artist` only for artists for which there is no dedicated
+        "add" method; and if necessary, use a method such as
+        `update_datalim` or `update_datalim_numerix` to manually update the
+        dataLim if the artist is to be included in autoscaling.
 
         Returns the artist.
         """
@@ -1456,6 +1460,17 @@ class _AxesBase(martist.Artist):
 
         collection._remove_method = lambda h: self.collections.remove(h)
         return collection
+
+    def add_image(self, image):
+        """
+        Add a :class:`~matplotlib.image.AxesImage` to the axes.
+
+        Returns the image.
+        """
+        self._set_artist_props(image)
+        self.images.append(image)
+        image._remove_method = lambda h: self.images.remove(h)
+        return image
 
     def add_line(self, line):
         """
@@ -1545,8 +1560,10 @@ class _AxesBase(martist.Artist):
         # the auto-scaling
 
         # cannot check for '==0' since unitized data may not compare to zero
+        # issue #2150 - we update the limits if patch has non zero width
+        # or height.
         if (isinstance(patch, mpatches.Rectangle) and
-            ((not patch.get_width()) or (not patch.get_height()))):
+                ((not patch.get_width()) and (not patch.get_height()))):
             return
         vertices = patch.get_path().vertices
         if vertices.size > 0:
@@ -1812,7 +1829,7 @@ class _AxesBase(martist.Artist):
             mx = my = args[0]
         elif len(args) == 2:
             mx, my = args
-        else:
+        elif len(args) > 2:
             raise ValueError("more than two arguments were supplied")
         if mx is not None:
             self.set_xmargin(mx)
@@ -1882,7 +1899,7 @@ class _AxesBase(martist.Artist):
     def autoscale_view(self, tight=None, scalex=True, scaley=True):
         """
         Autoscale the view limits using the data limits. You can
-        selectively autoscale only a single axis, eg, the xaxis by
+        selectively autoscale only a single axis, e.g., the xaxis by
         setting *scaley* to *False*.  The autoscaling preserves any
         axis direction reversal that has already been done.
 
@@ -2046,8 +2063,8 @@ class _AxesBase(martist.Artist):
                    for z, im in zorder_images]
 
             l, b, r, t = self.bbox.extents
-            width = mag * ((round(r) + 0.5) - (round(l) - 0.5))
-            height = mag * ((round(t) + 0.5) - (round(b) - 0.5))
+            width = int(mag * ((round(r) + 0.5) - (round(l) - 0.5)))
+            height = int(mag * ((round(t) + 0.5) - (round(b) - 0.5)))
             im = mimage.from_images(height,
                                     width,
                                     ims)
@@ -2151,7 +2168,7 @@ class _AxesBase(martist.Artist):
         *axis* can be 'both' (default), 'x', or 'y' to control which
         set of gridlines are drawn.
 
-        *kwargs* are used to set the grid line properties, eg::
+        *kwargs* are used to set the grid line properties, e.g.,::
 
            ax.grid(color='r', linestyle='-', linewidth=2)
 
@@ -2605,8 +2622,8 @@ class _AxesBase(martist.Artist):
         Get the x tick labels as a list of :class:`~matplotlib.text.Text`
         instances.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         minor : bool
            If True return the minor ticklabels,
            else return the major ticklabels
@@ -2858,8 +2875,8 @@ class _AxesBase(martist.Artist):
         Get the x tick labels as a list of :class:`~matplotlib.text.Text`
         instances.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         minor : bool
            If True return the minor ticklabels,
            else return the major ticklabels

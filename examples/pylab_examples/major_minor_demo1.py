@@ -16,7 +16,7 @@ that are multiples of 5.  Label major ticks with %d formatting but
 don't label minor ticks
 
 The MultipleLocator ticker class is used to place ticks on multiples of
-some base.  The FormatStrFormatter uses a string format string (eg
+some base.  The FormatStrFormatter uses a string format string (e.g.,
 '%d' or '%1.2f' or '%1.1f cm' ) to format the tick
 
 The pylab interface grid command changes the grid settings of the
@@ -34,21 +34,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
-majorLocator   = MultipleLocator(20)
+majorLocator = MultipleLocator(20)
 majorFormatter = FormatStrFormatter('%d')
-minorLocator   = MultipleLocator(5)
+minorLocator = MultipleLocator(5)
 
 
 t = np.arange(0.0, 100.0, 0.1)
 s = np.sin(0.1*np.pi*t)*np.exp(-t*0.01)
 
 fig, ax = plt.subplots()
-plt.plot(t,s)
+plt.plot(t, s)
 
 ax.xaxis.set_major_locator(majorLocator)
 ax.xaxis.set_major_formatter(majorFormatter)
 
-#for the minor ticks, use no labels; default NullFormatter
+# for the minor ticks, use no labels; default NullFormatter
 ax.xaxis.set_minor_locator(minorLocator)
 
 plt.show()

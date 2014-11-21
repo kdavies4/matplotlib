@@ -150,9 +150,6 @@ class RendererCairo(RendererBase):
 
 
     def draw_path(self, gc, path, transform, rgbFace=None):
-        if len(path.vertices) > 18980:
-            raise ValueError("The Cairo backend can not draw paths longer than 18980 points.")
-
         ctx = gc.ctx
 
         transform = transform + \
@@ -167,8 +164,6 @@ class RendererCairo(RendererBase):
         # bbox - not currently used
         if _debug: print('%s.%s()' % (self.__class__.__name__, _fn_name()))
 
-        im.flipud_out()
-
         rows, cols, buf = im.color_conv (BYTE_FORMAT)
         surface = cairo.ImageSurface.create_for_data (
                       buf, cairo.FORMAT_ARGB32, cols, rows, cols*4)
@@ -182,8 +177,6 @@ class RendererCairo(RendererBase):
         else:
             ctx.paint()
         ctx.restore()
-
-        im.flipud_out()
 
     def draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
         # Note: x,y are device/display coords, not user-coords, unlike other
@@ -212,7 +205,7 @@ class RendererCairo(RendererBase):
                 if not isinstance(s, six.text_type):
                     s = six.text_type(s)
             else:
-                if isinstance(s, six.text_type):
+                if not six.PY3 and isinstance(s, six.text_type):
                     s = s.encode("utf-8")
 
             ctx.show_text(s)

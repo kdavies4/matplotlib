@@ -12,8 +12,9 @@ s = np.sin(2*np.pi*freqs[0]*t)
 l, = plt.plot(t, s, lw=2)
 
 
-class Index:
+class Index(object):
     ind = 0
+
     def next(self, event):
         self.ind += 1
         i = self.ind % len(freqs)
@@ -37,4 +38,3 @@ bprev = Button(axprev, 'Previous')
 bprev.on_clicked(callback.prev)
 
 plt.show()
-

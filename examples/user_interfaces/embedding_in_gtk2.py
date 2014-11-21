@@ -22,18 +22,18 @@ from matplotlib.backend_bases import key_press_handler
 
 win = gtk.Window()
 win.connect("destroy", lambda x: gtk.main_quit())
-win.set_default_size(400,300)
+win.set_default_size(400, 300)
 win.set_title("Embedding in GTK")
 
 vbox = gtk.VBox()
 win.add(vbox)
 
-fig = Figure(figsize=(5,4), dpi=100)
+fig = Figure(figsize=(5, 4), dpi=100)
 ax = fig.add_subplot(111)
-t = arange(0.0,3.0,0.01)
+t = arange(0.0, 3.0, 0.01)
 s = sin(2*pi*t)
 
-ax.plot(t,s)
+ax.plot(t, s)
 
 
 canvas = FigureCanvas(fig)  # a gtk.DrawingArea
@@ -43,7 +43,7 @@ vbox.pack_start(toolbar, False, False)
 
 
 def on_key_event(event):
-    print('you pressed %s'%event.key)
+    print('you pressed %s' % event.key)
     key_press_handler(event, canvas, toolbar)
 
 canvas.mpl_connect('key_press_event', on_key_event)

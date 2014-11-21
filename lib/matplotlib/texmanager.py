@@ -70,23 +70,23 @@ def dvipng_hack_alpha():
     try:
         p = Popen(['dvipng', '-version'], stdin=PIPE, stdout=PIPE,
                   stderr=STDOUT, close_fds=(sys.platform != 'win32'))
+        stdout, stderr = p.communicate()
     except OSError:
         mpl.verbose.report('No dvipng was found', 'helpful')
         return False
-    stdin, stdout = p.stdin, p.stdout
-    for line in stdout:
-        if line.startswith(b'dvipng '):
+    lines = stdout.decode('ascii').split('\n')
+    for line in lines:
+        if line.startswith('dvipng '):
             version = line.split()[-1]
             mpl.verbose.report('Found dvipng version %s' % version,
                                'helpful')
-            version = version.decode('ascii')
             version = distutils.version.LooseVersion(version)
             return version < distutils.version.LooseVersion('1.6')
     mpl.verbose.report('Unexpected response from dvipng -version', 'helpful')
     return False
 
 
-class TexManager:
+class TexManager(object):
     """
     Convert strings to dvi files using TeX, caching the results to a
     working dir

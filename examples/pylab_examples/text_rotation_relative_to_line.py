@@ -13,24 +13,24 @@ coordinate system, as shown in the example below.
 from pylab import *
 
 # Plot diagonal line (45 degrees)
-h = plot( r_[:10], r_[:10] )
+h = plot(r_[:10], r_[:10])
 
 # set limits so that it no longer looks on screen to be 45 degrees
-xlim([-10,20])
+xlim([-10, 20])
 
 # Locations to plot text
-l1 = array((1,1))
-l2 = array((5,5))
+l1 = array((1, 1))
+l2 = array((5, 5))
 
 # Rotate angle
 angle = 45
 trans_angle = gca().transData.transform_angles(array((45,)),
-                                               l2.reshape((1,2)))[0]
+                                               l2.reshape((1, 2)))[0]
 
 # Plot text
-th1 = text(l1[0],l1[1],'text not rotated correctly',fontsize=16,
+th1 = text(l1[0], l1[1], 'text not rotated correctly', fontsize=16,
            rotation=angle)
-th2 = text(l2[0],l2[1],'text not rotated correctly',fontsize=16,
+th2 = text(l2[0], l2[1], 'text not rotated correctly', fontsize=16,
            rotation=trans_angle)
 
 show()

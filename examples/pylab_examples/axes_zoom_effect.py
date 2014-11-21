@@ -1,8 +1,8 @@
 from matplotlib.transforms import Bbox, TransformedBbox, \
-     blended_transform_factory
+    blended_transform_factory
 
 from mpl_toolkits.axes_grid1.inset_locator import BboxPatch, BboxConnector,\
-     BboxConnectorPatch
+    BboxConnectorPatch
 
 
 def connect_bbox(bbox1, bbox2,
@@ -21,7 +21,7 @@ def connect_bbox(bbox1, bbox2,
     bbox_patch2 = BboxPatch(bbox2, **prop_patches)
 
     p = BboxConnectorPatch(bbox1, bbox2,
-                           #loc1a=3, loc2a=2, loc1b=4, loc2b=1,
+                           # loc1a=3, loc2a=2, loc1b=4, loc2b=1,
                            loc1a=loc1a, loc2a=loc2a, loc1b=loc1b, loc2b=loc2b,
                            **prop_patches)
     p.set_clip_on(False)
@@ -49,9 +49,9 @@ def zoom_effect01(ax1, ax2, xmin, xmax, **kwargs):
     mybbox1 = TransformedBbox(bbox, trans1)
     mybbox2 = TransformedBbox(bbox, trans2)
 
-    prop_patches=kwargs.copy()
-    prop_patches["ec"]="none"
-    prop_patches["alpha"]=0.2
+    prop_patches = kwargs.copy()
+    prop_patches["ec"] = "none"
+    prop_patches["alpha"] = 0.2
 
     c1, c2, bbox_patch1, bbox_patch2, p = \
         connect_bbox(mybbox1, mybbox2,
@@ -82,9 +82,9 @@ def zoom_effect02(ax1, ax2, **kwargs):
     mybbox1 = ax1.bbox
     mybbox2 = TransformedBbox(ax1.viewLim, trans)
 
-    prop_patches=kwargs.copy()
-    prop_patches["ec"]="none"
-    prop_patches["alpha"]=0.2
+    prop_patches = kwargs.copy()
+    prop_patches["ec"] = "none"
+    prop_patches["alpha"] = 0.2
 
     c1, c2, bbox_patch1, bbox_patch2, p = \
         connect_bbox(mybbox1, mybbox2,
@@ -102,7 +102,7 @@ def zoom_effect02(ax1, ax2, **kwargs):
 
 import matplotlib.pyplot as plt
 
-plt.figure(1, figsize=(5,5))
+plt.figure(1, figsize=(5, 5))
 ax1 = plt.subplot(221)
 ax2 = plt.subplot(212)
 ax2.set_xlim(0, 1)

@@ -14,6 +14,8 @@ import atexit
 import weakref
 import warnings
 
+import numpy as np
+
 import matplotlib as mpl
 from matplotlib.backend_bases import RendererBase, GraphicsContextBase,\
     FigureManagerBase, FigureCanvasBase
@@ -22,8 +24,6 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from matplotlib.path import Path
 from matplotlib import _png, rcParams
-from matplotlib import font_manager
-from matplotlib.ft2font import FT2Font
 from matplotlib.cbook import is_string_like, is_writable_file_like
 from matplotlib.compat import subprocess
 from matplotlib.compat.subprocess import check_output
@@ -33,14 +33,24 @@ from matplotlib.compat.subprocess import check_output
 
 # create a list of system fonts, all of these should work with xe/lua-latex
 system_fonts = []
-for f in font_manager.findSystemFonts():
+if sys.platform.startswith('win'):
+    from matplotlib import font_manager
+    from matplotlib.ft2font import FT2Font
+    for f in font_manager.win32InstalledFonts():
+        try:
+            system_fonts.append(FT2Font(str(f)).family_name)
+        except:
+            pass # unknown error, skip this font
+else:
+    # assuming fontconfig is installed and the command 'fc-list' exists
     try:
-        system_fonts.append(FT2Font(f).family_name)
-    except RuntimeError:
-        pass  # some fonts on osx are known to fail, print?
+        # list scalable (non-bitmap) fonts
+        fc_list = check_output(['fc-list', ':outline,scalable', 'family'])
+        fc_list = fc_list.decode('utf8')
+        system_fonts = [f.split(',')[0] for f in fc_list.splitlines()]
+        system_fonts = list(set(system_fonts))
     except:
-        pass  # unknown error, skip this font
-
+        warnings.warn('error getting fonts from fc-list', UserWarning)
 
 def get_texcommand():
     """Get chosen TeX system from rc."""
@@ -204,7 +214,7 @@ class LatexError(Exception):
         self.latex_output = latex_output
 
 
-class LatexManagerFactory:
+class LatexManagerFactory(object):
     previous_instance = None
 
     @staticmethod
@@ -225,7 +235,7 @@ class LatexManagerFactory:
             LatexManagerFactory.previous_instance = new_inst
             return new_inst
 
-class WeakSet:
+class WeakSet(object):
     # TODO: Poor man's weakref.WeakSet.
     #       Remove this once python 2.6 support is dropped from matplotlib.
 
@@ -243,7 +253,7 @@ class WeakSet:
         return six.iterkeys(self.weak_key_dict)
 
 
-class LatexManager:
+class LatexManager(object):
     """
     The LatexManager opens an instance of the LaTeX application for
     determining the metrics of text elements. The LaTeX environment can be
@@ -301,9 +311,13 @@ class LatexManager:
         self.texcommand = get_texcommand()
         self.latex_header = LatexManager._build_latex_header()
         latex_end = "\n\\makeatletter\n\\@@end\n"
-        latex = subprocess.Popen([self.texcommand, "-halt-on-error"],
-                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                 cwd=self.tmpdir)
+        try:
+            latex = subprocess.Popen([self.texcommand, "-halt-on-error"],
+                                     stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE,
+                                     cwd=self.tmpdir)
+        except OSError:
+            raise RuntimeError("Error starting process '%s'" % self.texcommand)
         test_input = self.latex_header + latex_end
         stdout, stderr = latex.communicate(test_input.encode("utf-8"))
         if latex.returncode != 0:
@@ -328,9 +342,9 @@ class LatexManager:
         if not os.path.isdir(self.tmpdir):
             return
         try:
-            self.latex_stdin_utf8.close()
             self.latex.communicate()
-            self.latex.wait()
+            self.latex_stdin_utf8.close()
+            self.latex.stdout.close()
         except:
             pass
         try:
@@ -607,9 +621,7 @@ class RendererPgf(RendererBase):
         fname = os.path.splitext(os.path.basename(self.fh.name))[0]
         fname_img = "%s-img%d.png" % (fname, self.image_counter)
         self.image_counter += 1
-        im.flipud_out()
-        rows, cols, buf = im.as_rgba_str()
-        _png.write_png(buf, cols, rows, os.path.join(path, fname_img))
+        _png.write_png(np.array(im)[::-1], os.path.join(path, fname_img))
 
         # reference the image in the pgf picture
         writeln(self.fh, r"\begin{pgfscope}")
@@ -626,7 +638,7 @@ class RendererPgf(RendererBase):
         # prepare string for tex
         s = common_texification(s)
         prop_cmds = _font_properties_str(prop)
-        s = r"{%s %s}" % (prop_cmds, s)
+        s = r"%s %s" % (prop_cmds, s)
 
 
         writeln(self.fh, r"\begin{pgfscope}")
@@ -640,10 +652,11 @@ class RendererPgf(RendererBase):
             writeln(self.fh, r"\definecolor{textcolor}{rgb}{%f,%f,%f}" % rgb)
             writeln(self.fh, r"\pgfsetstrokecolor{textcolor}")
             writeln(self.fh, r"\pgfsetfillcolor{textcolor}")
+            s = r"\color{textcolor}" + s
 
         f = 1.0 / self.figure.dpi
         text_args = []
-        if angle == 0 or mtext.get_rotation_mode() == "anchor":
+        if mtext and (angle == 0 or mtext.get_rotation_mode() == "anchor"):
             # if text anchoring can be supported, get the original coordinates
             # and add alignment information
             x, y = mtext.get_transform().transform_point(mtext.get_position())
@@ -725,7 +738,7 @@ def new_figure_manager_given_figure(num, figure):
     return manager
 
 
-class TmpDirCleaner:
+class TmpDirCleaner(object):
     remaining_tmpdirs = set()
 
     @staticmethod

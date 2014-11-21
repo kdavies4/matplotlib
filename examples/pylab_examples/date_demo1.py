@@ -25,8 +25,7 @@ years = YearLocator()   # every year
 months = MonthLocator()  # every month
 yearsFmt = DateFormatter('%Y')
 
-quotes = quotes_historical_yahoo_ochl(
-    'INTC', date1, date2)
+quotes = quotes_historical_yahoo_ochl('INTC', date1, date2)
 if len(quotes) == 0:
     raise SystemExit
 
@@ -42,8 +41,10 @@ ax.xaxis.set_major_formatter(yearsFmt)
 ax.xaxis.set_minor_locator(months)
 ax.autoscale_view()
 
+
 # format the coords message box
-def price(x): return '$%1.2f'%x
+def price(x):
+    return '$%1.2f' % x
 ax.fmt_xdata = DateFormatter('%Y-%m-%d')
 ax.fmt_ydata = price
 ax.grid(True)

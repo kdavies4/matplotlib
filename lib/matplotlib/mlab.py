@@ -76,8 +76,11 @@ Functions that don't exist in MATLAB, but are useful anyway:
     Return the phase (unwrapped angle) of the frequency spectrum of a signal
 
 :func:`detrend_mean`
+    Remove the mean from a line.
+
 :func:`demean`
-    Remove the mean from a line.  These functions differ in their defaults.
+    Remove the mean from a line. This function is the same as as
+    :func:`detrend_mean` except for the default *axis*.
 
 :func:`detrend_linear`
     Remove the best fit line from a line.
@@ -391,6 +394,7 @@ def demean(x, axis=0):
     .. seealso::
 
         :func:`delinear`
+
         :func:`denone`
             :func:`delinear` and :func:`denone` are other detrend algorithms.
 
@@ -424,6 +428,7 @@ def detrend_mean(x, axis=None):
             for the default *axis*.
 
         :func:`detrend_linear`
+
         :func:`detrend_none`
             :func:`detrend_linear` and :func:`detrend_none` are other
             detrend algorithms.
@@ -471,6 +476,7 @@ def detrend_none(x, axis=None):
             for the default *axis*, which has no effect.
 
         :func:`detrend_mean`
+
         :func:`detrend_linear`
             :func:`detrend_mean` and :func:`detrend_linear` are other
             detrend algorithms.
@@ -503,6 +509,7 @@ def detrend_linear(y):
             for the default *axis*.
 
         :func:`detrend_mean`
+
         :func:`detrend_none`
             :func:`detrend_mean` and :func:`detrend_none` are other
             detrend algorithms.
@@ -534,9 +541,11 @@ def stride_windows(x, n, noverlap=None, axis=0):
     Get all windows of x with length n as a single array,
     using strides to avoid data duplication.
 
-    .. warning:: It is not safe to write to the output array.  Multiple
-    elements may point to the same piece of memory, so modifying one value may
-    change others.
+    .. warning::
+
+        It is not safe to write to the output array.  Multiple
+        elements may point to the same piece of memory,
+        so modifying one value may change others.
 
     Call signature::
 
@@ -584,10 +593,10 @@ def stride_windows(x, n, noverlap=None, axis=0):
     step = n - noverlap
     if axis == 0:
         shape = (n, (x.shape[-1]-noverlap)//step)
-        strides = (x.itemsize, step*x.itemsize)
+        strides = (x.strides[0], step*x.strides[0])
     else:
         shape = ((x.shape[-1]-noverlap)//step, n)
-        strides = (step*x.itemsize, x.itemsize)
+        strides = (step*x.strides[0], x.strides[0])
     return np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
 
 
@@ -596,9 +605,11 @@ def stride_repeat(x, n, axis=0):
     Repeat the values in an array in a memory-efficient manner.  Array x is
     stacked vertically n times.
 
-    .. warning:: It is not safe to write to the output array.  Multiple
-    elements may point to the same piece of memory, so modifying one value may
-    change others.
+    .. warning::
+
+        It is not safe to write to the output array.  Multiple
+        elements may point to the same piece of memory, so
+        modifying one value may change others.
 
     Call signature::
 
@@ -633,10 +644,10 @@ def stride_repeat(x, n, axis=0):
 
     if axis == 0:
         shape = (n, x.size)
-        strides = (0, x.itemsize)
+        strides = (0, x.strides[0])
     else:
         shape = (x.size, n)
-        strides = (x.itemsize, 0)
+        strides = (x.strides[0], 0)
 
     return np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
 
@@ -653,9 +664,9 @@ def _spectral_helper(x, y=None, NFFT=None, Fs=None, detrend_func=None,
         # if y is None use x for y
         same_data = True
     else:
-        #The checks for if y is x are so that we can use the same function to
-        #implement the core of psd(), csd(), and spectrogram() without doing
-        #extra calculations.  We return the unaveraged Pxy, freqs, and t.
+        # The checks for if y is x are so that we can use the same function to
+        # implement the core of psd(), csd(), and spectrogram() without doing
+        # extra calculations.  We return the unaveraged Pxy, freqs, and t.
         same_data = y is x
 
     if Fs is None:
@@ -681,8 +692,8 @@ def _spectral_helper(x, y=None, NFFT=None, Fs=None, detrend_func=None,
     if not same_data and mode != 'psd':
         raise ValueError("x and y must be equal if mode is not 'psd'")
 
-    #Make sure we're dealing with a numpy array. If y and x were the same
-    #object to start with, keep them that way
+    # Make sure we're dealing with a numpy array. If y and x were the same
+    # object to start with, keep them that way
     x = np.asarray(x)
     if not same_data:
         y = np.asarray(y)
@@ -817,7 +828,7 @@ def _single_spectrum_helper(x, mode, Fs=None, window=None, pad_to=None,
     return spec, freqs
 
 
-#Split out these keyword docs so that they can be used elsewhere
+# Split out these keyword docs so that they can be used elsewhere
 docstring.interpd.update(Spectral=cbook.dedent("""
     Keyword arguments:
 
@@ -875,6 +886,7 @@ docstring.interpd.update(PSD=cbook.dedent("""
 
       *detrend*: [ 'default' | 'constant' | 'mean' | 'linear' | 'none'] or
                  callable
+
           The function applied to each segment before fft-ing,
           designed to remove the mean or linear trend.  Unlike in
           MATLAB, where the *detrend* parameter is a vector, in
@@ -1241,6 +1253,7 @@ def specgram(x, NFFT=None, Fs=None, detrend=None, window=None,
 
       *mode*: [ 'default' | 'psd' | 'complex' | 'magnitude'
                 'angle' | 'phase' ]
+
           What sort of spectrum to use.  Default is 'psd'. which takes the
           power spectral density.  'complex' returns the complex-valued
           frequency spectrum.  'magnitude' returns the magnitude spectrum.
@@ -1364,11 +1377,11 @@ def donothing_callback(*args):
     pass
 
 
-def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
-                  window=window_hanning, noverlap=0,
-                  preferSpeedOverMemory=True,
-                  progressCallback=donothing_callback,
-                  returnPxx=False):
+def cohere_pairs(X, ij, NFFT=256, Fs=2, detrend=detrend_none,
+                 window=window_hanning, noverlap=0,
+                 preferSpeedOverMemory=True,
+                 progressCallback=donothing_callback,
+                 returnPxx=False):
 
     """
     Call signature::
@@ -1410,7 +1423,7 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
     where:
 
       - *Cxy*: dictionary of (*i*, *j*) tuples -> coherence vector for
-        that pair.  I.e., ``Cxy[(i,j) = cohere(X[:,i], X[:,j])``.
+        that pair.  i.e., ``Cxy[(i,j) = cohere(X[:,i], X[:,j])``.
         Number of dictionary keys is ``len(ij)``.
 
       - *Phase*: dictionary of phases of the cross spectral density at
@@ -1450,21 +1463,24 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
     # zero pad if X is too short
     if numRows < NFFT:
         tmp = X
-        X = np.zeros( (NFFT, numCols), X.dtype)
-        X[:numRows,:] = tmp
+        X = np.zeros((NFFT, numCols), X.dtype)
+        X[:numRows, :] = tmp
         del tmp
 
     numRows, numCols = X.shape
     # get all the columns of X that we are interested in by checking
     # the ij tuples
     allColumns = set()
-    for i,j in ij:
-        allColumns.add(i); allColumns.add(j)
+    for i, j in ij:
+        allColumns.add(i)
+        allColumns.add(j)
     Ncols = len(allColumns)
 
     # for real X, ignore the negative frequencies
-    if np.iscomplexobj(X): numFreqs = NFFT
-    else: numFreqs = NFFT//2+1
+    if np.iscomplexobj(X):
+        numFreqs = NFFT
+    else:
+        numFreqs = NFFT//2+1
 
     # cache the FFT of every windowed, detrended NFFT length segement
     # of every channel.  If preferSpeedOverMemory, cache the conjugate
@@ -1483,11 +1499,11 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
     normVal = np.linalg.norm(windowVals)**2
     for iCol in allColumns:
         progressCallback(i/Ncols, 'Cacheing FFTs')
-        Slices = np.zeros( (numSlices,numFreqs), dtype=np.complex_)
+        Slices = np.zeros((numSlices, numFreqs), dtype=np.complex_)
         for iSlice in slices:
             thisSlice = X[ind[iSlice]:ind[iSlice]+NFFT, iCol]
             thisSlice = windowVals*detrend(thisSlice)
-            Slices[iSlice,:] = np.fft.fft(thisSlice)[:numFreqs]
+            Slices[iSlice, :] = np.fft.fft(thisSlice)[:numFreqs]
 
         FFTSlices[iCol] = Slices
         if preferSpeedOverMemory:
@@ -1501,21 +1517,22 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
     Phase = {}
     count = 0
     N = len(ij)
-    for i,j in ij:
-        count +=1
-        if count%10==0:
+    for i, j in ij:
+        count += 1
+        if count % 10 == 0:
             progressCallback(count/N, 'Computing coherences')
 
         if preferSpeedOverMemory:
             Pxy = FFTSlices[i] * FFTConjSlices[j]
         else:
             Pxy = FFTSlices[i] * np.conjugate(FFTSlices[j])
-        if numSlices>1: Pxy = np.mean(Pxy, axis=0)
-        #Pxy = np.divide(Pxy, normVal)
+        if numSlices > 1:
+            Pxy = np.mean(Pxy, axis=0)
+#       Pxy = np.divide(Pxy, normVal)
         Pxy /= normVal
-        #Cxy[(i,j)] = np.divide(np.absolute(Pxy)**2, Pxx[i]*Pxx[j])
-        Cxy[i,j] = abs(Pxy)**2 / (Pxx[i]*Pxx[j])
-        Phase[i,j] =  np.arctan2(Pxy.imag, Pxy.real)
+#       Cxy[(i,j)] = np.divide(np.absolute(Pxy)**2, Pxx[i]*Pxx[j])
+        Cxy[i, j] = abs(Pxy)**2 / (Pxx[i]*Pxx[j])
+        Phase[i, j] = np.arctan2(Pxy.imag, Pxy.real)
 
     freqs = Fs/NFFT*np.arange(numFreqs)
     if returnPxx:
@@ -1523,13 +1540,14 @@ def cohere_pairs( X, ij, NFFT=256, Fs=2, detrend=detrend_none,
     else:
         return Cxy, Phase, freqs
 
+
 def entropy(y, bins):
     r"""
-    Return the entropy of the data in *y*.
+    Return the entropy of the data in *y* in units of nat.
 
     .. math::
 
-      \sum p_i \log_2(p_i)
+      -\sum p_i \ln(p_i)
 
     where :math:`p_i` is the probability of observing *y* in the
     :math:`i^{th}` bin of *bins*.  *bins* can be a number of bins or a
@@ -1551,32 +1569,11 @@ def entropy(y, bins):
     S = -1.0 * np.sum(p * np.log(p)) + np.log(delta)
     return S
 
+
 def normpdf(x, *args):
     "Return the normal pdf evaluated at *x*; args provides *mu*, *sigma*"
     mu, sigma = args
     return 1./(np.sqrt(2*np.pi)*sigma)*np.exp(-0.5 * (1./sigma*(x - mu))**2)
-
-
-def levypdf(x, gamma, alpha):
-    "Returm the levy pdf evaluated at *x* for params *gamma*, *alpha*"
-
-    N = len(x)
-
-    if N % 2 != 0:
-        raise ValueError('x must be an event length array; try\n' + \
-              'x = np.linspace(minx, maxx, N), where N is even')
-
-    dx = x[1] - x[0]
-
-    f = 1/(N*dx)*np.arange(-N / 2, N / 2, np.float_)
-
-    ind = np.concatenate([np.arange(N / 2, N, int),
-                          np.arange(0, N / 2, int)])
-    df = f[1] - f[0]
-    cfl = np.exp(-gamma * np.absolute(2 * np.pi * f) ** alpha)
-
-    px = np.fft.fft(np.take(cfl, ind) * df).astype(np.float_)
-    return np.take(px, ind)
 
 
 def find(condition):
@@ -1592,33 +1589,37 @@ def longest_contiguous_ones(x):
     equally long stretches, pick the first.
     """
     x = np.ravel(x)
-    if len(x)==0:
+    if len(x) == 0:
         return np.array([])
 
-    ind = (x==0).nonzero()[0]
-    if len(ind)==0:
+    ind = (x == 0).nonzero()[0]
+    if len(ind) == 0:
         return np.arange(len(x))
-    if len(ind)==len(x):
+    if len(ind) == len(x):
         return np.array([])
 
-    y = np.zeros( (len(x)+2,), x.dtype)
+    y = np.zeros((len(x)+2,), x.dtype)
     y[1:-1] = x
     dif = np.diff(y)
-    up = (dif ==  1).nonzero()[0];
-    dn = (dif == -1).nonzero()[0];
+    up = (dif == 1).nonzero()[0]
+    dn = (dif == -1).nonzero()[0]
     i = (dn-up == max(dn - up)).nonzero()[0][0]
     ind = np.arange(up[i], dn[i])
 
     return ind
 
+
 def longest_ones(x):
     '''alias for longest_contiguous_ones'''
     return longest_contiguous_ones(x)
 
+
 def prepca(P, frac=0):
     """
 
-    WARNING: this function is deprecated -- please see class PCA instead
+    .. warning::
+
+        This function is deprecated -- please see class PCA instead
 
     Compute the principal components of *P*.  *P* is a (*numVars*,
     *numObs*) array.  *frac* is the minimum fraction of variance that a
@@ -1629,7 +1630,7 @@ def prepca(P, frac=0):
 
       - *Pcomponents* : a (numVars, numObs) array
 
-      - *Trans* : the weights matrix, ie, *Pcomponents* = *Trans* *
+      - *Trans* : the weights matrix, i.e., *Pcomponents* = *Trans* *
          *P*
 
       - *fracVar* : the fraction of the variance accounted for by each
@@ -1640,19 +1641,19 @@ def prepca(P, frac=0):
     its successor seems to be called "processpcs".
     """
     warnings.warn('This function is deprecated -- see class PCA instead')
-    U,s,v = np.linalg.svd(P)
+    U, s, v = np.linalg.svd(P)
     varEach = s**2/P.shape[1]
     totVar = varEach.sum()
     fracVar = varEach/totVar
-    ind = slice((fracVar>=frac).sum())
+    ind = slice((fracVar >= frac).sum())
     # select the components that are greater
-    Trans = U[:,ind].transpose()
+    Trans = U[:, ind].transpose()
     # The transformed data
-    Pcomponents = np.dot(Trans,P)
+    Pcomponents = np.dot(Trans, P)
     return Pcomponents, Trans, fracVar[ind]
 
 
-class PCA:
+class PCA(object):
     def __init__(self, a, standardize=True):
         """
         compute the SVD of a and store data for PCA.  Use project to
@@ -1661,8 +1662,8 @@ class PCA:
         Inputs:
 
           *a*: a numobservations x numdims array
-          *standardize*: True if input data are to be standardized. If False, only centering will be
-          carried out.
+          *standardize*: True if input data are to be standardized. If False,
+          only centering will be carried out.
 
         Attrs:
 
@@ -1670,28 +1671,31 @@ class PCA:
 
           *numrows*, *numcols*: the dimensions of a
 
-          *mu* : a numdims array of means of a. This is the vector that points to the 
-          origin of PCA space. 
+          *mu*: a numdims array of means of a. This is the vector that points
+          to the origin of PCA space.
 
-          *sigma* : a numdims array of standard deviation of a
+          *sigma*: a numdims array of standard deviation of a
 
-          *fracs* : the proportion of variance of each of the principal components
-        
-          *s* : the actual eigenvalues of the decomposition
+          *fracs*: the proportion of variance of each of the principal
+          components
 
-          *Wt* : the weight vector for projecting a numdims point or array into PCA space
+          *s*: the actual eigenvalues of the decomposition
 
-          *Y* : a projected into PCA space
+          *Wt*: the weight vector for projecting a numdims point or array into
+          PCA space
+
+          *Y*: a projected into PCA space
 
 
-        The factor loadings are in the Wt factor, ie the factor
+        The factor loadings are in the Wt factor, i.e., the factor
         loadings for the 1st principal component are given by Wt[0].
         This row is also the 1st eigenvector.
 
         """
         n, m = a.shape
-        if n<m:
-            raise RuntimeError('we assume data in a is organized with numrows>numcols')
+        if n < m:
+            raise RuntimeError('we assume data in a is organized with '
+                               'numrows>numcols')
 
         self.numrows, self.numcols = n, m
         self.mu = a.mean(axis=0)
@@ -1705,77 +1709,80 @@ class PCA:
         U, s, Vh = np.linalg.svd(a, full_matrices=False)
 
         # Note: .H indicates the conjugate transposed / Hermitian.
-        
+
         # The SVD is commonly written as a = U s V.H.
         # If U is a unitary matrix, it means that it satisfies U.H = inv(U).
-        
+
         # The rows of Vh are the eigenvectors of a.H a.
-        # The columns of U are the eigenvectors of a a.H. 
-        # For row i in Vh and column i in U, the corresponding eigenvalue is s[i]**2.
-         
+        # The columns of U are the eigenvectors of a a.H.
+        # For row i in Vh and column i in U, the corresponding eigenvalue is
+        # s[i]**2.
+
         self.Wt = Vh
-        
+
         # save the transposed coordinates
         Y = np.dot(Vh, a.T).T
         self.Y = Y
-        
+
         # save the eigenvalues
         self.s = s**2
-        
+
         # and now the contribution of the individual components
         vars = self.s/float(len(s))
         self.fracs = vars/vars.sum()
 
-
     def project(self, x, minfrac=0.):
-        'project x onto the principle axes, dropping any axes where fraction of variance<minfrac'
+        '''
+        project x onto the principle axes, dropping any axes where fraction
+        of variance<minfrac
+        '''
         x = np.asarray(x)
 
         ndims = len(x.shape)
 
-        if (x.shape[-1]!=self.numcols):
-            raise ValueError('Expected an array with dims[-1]==%d'%self.numcols)
-
+        if (x.shape[-1] != self.numcols):
+            raise ValueError('Expected an array with dims[-1]==%d' %
+                             self.numcols)
 
         Y = np.dot(self.Wt, self.center(x).T).T
-        mask = self.fracs>=minfrac
-        if ndims==2:
-            Yreduced = Y[:,mask]
+        mask = self.fracs >= minfrac
+        if ndims == 2:
+            Yreduced = Y[:, mask]
         else:
             Yreduced = Y[mask]
         return Yreduced
 
-
-
     def center(self, x):
-        'center and optionally standardize the data using the mean and sigma from training set a'
+        '''
+        center and optionally standardize the data using the mean and sigma
+        from training set a
+        '''
         if self.standardize:
             return (x - self.mu)/self.sigma
         else:
             return (x - self.mu)
 
-
-
     @staticmethod
     def _get_colinear():
         c0 = np.array([
-            0.19294738,  0.6202667 ,  0.45962655,  0.07608613,  0.135818  ,
+            0.19294738,  0.6202667,   0.45962655,  0.07608613,  0.135818,
             0.83580842,  0.07218851,  0.48318321,  0.84472463,  0.18348462,
             0.81585306,  0.96923926,  0.12835919,  0.35075355,  0.15807861,
-            0.837437  ,  0.10824303,  0.1723387 ,  0.43926494,  0.83705486])
+            0.837437,    0.10824303,  0.1723387,   0.43926494,  0.83705486])
 
         c1 = np.array([
-            -1.17705601, -0.513883  , -0.26614584,  0.88067144,  1.00474954,
-            -1.1616545 ,  0.0266109 ,  0.38227157,  1.80489433,  0.21472396,
+            -1.17705601, -0.513883,   -0.26614584,  0.88067144,  1.00474954,
+            -1.1616545,   0.0266109,   0.38227157,  1.80489433,  0.21472396,
             -1.41920399, -2.08158544, -0.10559009,  1.68999268,  0.34847107,
-            -0.4685737 ,  1.23980423, -0.14638744, -0.35907697,  0.22442616])
+            -0.4685737,   1.23980423, -0.14638744, -0.35907697,  0.22442616])
 
         c2 = c0 + 2*c1
         c3 = -3*c0 + 4*c1
         a = np.array([c3, c0, c1, c2]).T
         return a
 
-def prctile(x, p = (0.0, 25.0, 50.0, 75.0, 100.0)):
+
+def prctile(x, p=(0.0, 25.0, 50.0, 75.0, 100.0)):
     """
     Return the percentiles of *x*.  *p* can either be a sequence of
     percentile values or a scalar.  If *p* is a sequence, the ith
@@ -1798,7 +1805,7 @@ def prctile(x, p = (0.0, 25.0, 50.0, 75.0, 100.0)):
     values = np.array(x).ravel()  # copy
     values.sort()
 
-    idxs = per /100. * (values.shape[0] - 1)
+    idxs = per/100. * (values.shape[0] - 1)
     ai = idxs.astype(np.int)
     bi = ai + 1
     frac = idxs % 1
@@ -1815,7 +1822,8 @@ def prctile(x, p = (0.0, 25.0, 50.0, 75.0, 100.0)):
         bi[cond] -= 1
         frac[cond] += 1
 
-    return _interpolate(values[ai],values[bi],frac)
+    return _interpolate(values[ai], values[bi], frac)
+
 
 def prctile_rank(x, p):
     """
@@ -1835,11 +1843,12 @@ def prctile_rank(x, p):
     else:
         p = np.asarray(p)
 
-    if p.max()<=1 or p.min()<0 or p.max()>100:
+    if p.max() <= 1 or p.min() < 0 or p.max() > 100:
         raise ValueError('percentiles should be in range 0..100, not 0..1')
 
     ptiles = prctile(x, p)
     return np.searchsorted(ptiles, x)
+
 
 def center_matrix(M, dim=0):
     """
@@ -1852,10 +1861,9 @@ def center_matrix(M, dim=0):
     if dim:
         M = (M - M.mean(axis=0)) / M.std(axis=0)
     else:
-        M = (M - M.mean(axis=1)[:,np.newaxis])
-        M = M / M.std(axis=1)[:,np.newaxis]
+        M = (M - M.mean(axis=1)[:, np.newaxis])
+        M = M / M.std(axis=1)[:, np.newaxis]
     return M
-
 
 
 def rk4(derivs, y0, t):
@@ -1904,12 +1912,12 @@ def rk4(derivs, y0, t):
     scipy.integrate tools rather than this function.
     """
 
-    try: Ny = len(y0)
+    try:
+        Ny = len(y0)
     except TypeError:
-        yout = np.zeros( (len(t),), np.float_)
+        yout = np.zeros((len(t),), np.float_)
     else:
-        yout = np.zeros( (len(t), Ny), np.float_)
-
+        yout = np.zeros((len(t), Ny), np.float_)
 
     yout[0] = y0
     i = 0
@@ -1944,7 +1952,8 @@ def bivariate_normal(X, Y, sigmax=1.0, sigmay=1.0,
     rho = sigmaxy/(sigmax*sigmay)
     z = Xmu**2/sigmax**2 + Ymu**2/sigmay**2 - 2*rho*Xmu*Ymu/(sigmax*sigmay)
     denom = 2*np.pi*sigmax*sigmay*np.sqrt(1-rho**2)
-    return np.exp( -z/(2*(1-rho**2))) / denom
+    return np.exp(-z/(2*(1-rho**2))) / denom
+
 
 def get_xyz_where(Z, Cond):
     """
@@ -1954,27 +1963,30 @@ def get_xyz_where(Z, Cond):
     *z* are the values of *Z* at those indices.  *x*, *y*, and *z* are
     1D arrays.
     """
-    X,Y = np.indices(Z.shape)
+    X, Y = np.indices(Z.shape)
     return X[Cond], Y[Cond], Z[Cond]
 
-def get_sparse_matrix(M,N,frac=0.1):
+
+def get_sparse_matrix(M, N, frac=0.1):
     """
     Return a *M* x *N* sparse matrix with *frac* elements randomly
     filled.
     """
-    data = np.zeros((M,N))*0.
+    data = np.zeros((M, N))*0.
     for i in range(int(M*N*frac)):
-        x = np.random.randint(0,M-1)
-        y = np.random.randint(0,N-1)
-        data[x,y] = np.random.rand()
+        x = np.random.randint(0, M-1)
+        y = np.random.randint(0, N-1)
+        data[x, y] = np.random.rand()
     return data
 
-def dist(x,y):
+
+def dist(x, y):
     """
     Return the distance between two points.
     """
     d = x-y
-    return np.sqrt(np.dot(d,d))
+    return np.sqrt(np.dot(d, d))
+
 
 def dist_point_to_segment(p, s0, s1):
     """
@@ -1991,17 +2003,18 @@ def dist_point_to_segment(p, s0, s1):
     v = s1 - s0
     w = p - s0
 
-    c1 = np.dot(w,v);
-    if ( c1 <= 0 ):
-        return dist(p, s0);
+    c1 = np.dot(w, v)
+    if c1 <= 0:
+        return dist(p, s0)
 
-    c2 = np.dot(v,v)
-    if ( c2 <= c1 ):
-        return dist(p, s1);
+    c2 = np.dot(v, v)
+    if c2 <= c1:
+        return dist(p, s1)
 
     b = c1 / c2
-    pb = s0 + b * v;
+    pb = s0 + b * v
     return dist(p, pb)
+
 
 def segments_intersect(s1, s2):
     """
@@ -2034,7 +2047,7 @@ def fftsurr(x, detrend=detrend_none, window=window_none):
     Compute an FFT phase randomized surrogate of *x*.
     """
     if cbook.iterable(window):
-        x=window*detrend(x)
+        x = window*detrend(x)
     else:
         x = window(detrend(x))
     z = np.fft.fft(x)
@@ -2044,7 +2057,7 @@ def fftsurr(x, detrend=detrend_none, window=window_none):
     return np.fft.ifft(z).real
 
 
-class FIFOBuffer:
+class FIFOBuffer(object):
     """
     A FIFO queue to hold incoming *x*, *y* data in a rotating buffer
     using numpy arrays under the hood.  It is assumed that you will
@@ -2056,7 +2069,7 @@ class FIFOBuffer:
     and plot it to screen less freqeuently than the incoming.
 
     If you set the *dataLim* attr to
-    :class:`~matplotlib.transforms.BBox` (eg
+    :class:`~matplotlib.transforms.BBox` (e.g.,
     :attr:`matplotlib.Axes.dataLim`), the *dataLim* will be updated as
     new data come in.
 
@@ -2092,16 +2105,15 @@ class FIFOBuffer:
         Add scalar *x* and *y* to the queue.
         """
         if self.dataLim is not None:
-            xy = np.asarray([(x,y),])
+            xy = np.asarray([(x, y)])
             self.dataLim.update_from_data_xy(xy, None)
 
         ind = self._ind % self._nmax
-        #print 'adding to fifo:', ind, x, y
         self._xs[ind] = x
         self._ys[ind] = y
 
-        for N,funcs in six.iteritems(self.callbackd):
-            if (self._ind%N)==0:
+        for N, funcs in six.iteritems(self.callbackd):
+            if (self._ind % N) == 0:
                 for func in funcs:
                     func(self)
 
@@ -2111,7 +2123,8 @@ class FIFOBuffer:
         """
         Get the last *x*, *y* or *None*.  *None* if no data set.
         """
-        if self._ind==0: return None, None
+        if self._ind == 0:
+            return None, None
         ind = (self._ind-1) % self._nmax
         return self._xs[ind], self._ys[ind]
 
@@ -2120,7 +2133,7 @@ class FIFOBuffer:
         Return *x* and *y* as arrays; their length will be the len of
         data added or *nmax*.
         """
-        if self._ind<self._nmax:
+        if self._ind < self._nmax:
             return self._xs[:self._ind], self._ys[:self._ind]
         ind = self._ind % self._nmax
 
@@ -2141,7 +2154,7 @@ class FIFOBuffer:
         self.dataLim.update_from_data(x, y, True)
 
 
-def movavg(x,n):
+def movavg(x, n):
     """
     Compute the len(*n*) moving average of *x*.
     """
@@ -2150,8 +2163,8 @@ def movavg(x,n):
     return np.convolve(x, w, mode='valid')
 
 
-### the following code was written and submitted by Fernando Perez
-### from the ipython numutils package under a BSD license
+# the following code was written and submitted by Fernando Perez
+# from the ipython numutils package under a BSD license
 # begin fperez functions
 
 """
@@ -2195,13 +2208,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import math
 
 
-#*****************************************************************************
+# *****************************************************************************
 # Globals
-
-#****************************************************************************
+# ****************************************************************************
 # function definitions
 exp_safe_MIN = math.log(2.2250738585072014e-308)
 exp_safe_MAX = 1.7976931348623157e+308
+
 
 def exp_safe(x):
     """
@@ -2213,18 +2226,19 @@ def exp_safe(x):
     """
 
     if type(x) is np.ndarray:
-        return np.exp(np.clip(x,exp_safe_MIN,exp_safe_MAX))
+        return np.exp(np.clip(x, exp_safe_MIN, exp_safe_MAX))
     else:
         return math.exp(x)
 
-def amap(fn,*args):
+
+def amap(fn, *args):
     """
     amap(function, sequence[, sequence, ...]) -> array.
 
     Works like :func:`map`, but it returns an array.  This is just a
     convenient shorthand for ``numpy.array(map(...))``.
     """
-    return np.array(list(map(fn,*args)))
+    return np.array(list(map(fn, *args)))
 
 
 def rms_flat(a):
@@ -2232,6 +2246,7 @@ def rms_flat(a):
     Return the root mean square of all the elements of *a*, flattened out.
     """
     return np.sqrt(np.mean(np.absolute(a)**2))
+
 
 def l1norm(a):
     """
@@ -2241,6 +2256,7 @@ def l1norm(a):
     """
     return np.sum(np.absolute(a))
 
+
 def l2norm(a):
     """
     Return the *l2* norm of *a*, flattened out.
@@ -2249,7 +2265,8 @@ def l2norm(a):
     """
     return np.sqrt(np.sum(np.absolute(a)**2))
 
-def norm_flat(a,p=2):
+
+def norm_flat(a, p=2):
     """
     norm(a,p=2) -> l-p norm of a.flat
 
@@ -2260,12 +2277,13 @@ def norm_flat(a,p=2):
     """
     # This function was being masked by a more general norm later in
     # the file.  We may want to simply delete it.
-    if p=='Infinity':
+    if p == 'Infinity':
         return np.amax(np.absolute(a))
     else:
         return (np.sum(np.absolute(a)**p))**(1.0/p)
 
-def frange(xini,xfin=None,delta=None,**kw):
+
+def frange(xini, xfin=None, delta=None, **kw):
     """
     frange([start,] stop[, step, keywords]) -> array of floats
 
@@ -2305,27 +2323,26 @@ def frange(xini,xfin=None,delta=None,**kw):
       array([ 1.   ,  2.375,  3.75 ,  5.125,  6.5  ])
     """
 
-    #defaults
-    kw.setdefault('closed',1)
+    # defaults
+    kw.setdefault('closed', 1)
     endpoint = kw['closed'] != 0
 
     # funny logic to allow the *first* argument to be optional (like range())
     # This was modified with a simpler version from a similar frange() found
     # at http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66472
-    if xfin == None:
+    if xfin is None:
         xfin = xini + 0.0
         xini = 0.0
 
-    if delta == None:
+    if delta is None:
         delta = 1.0
 
     # compute # of points, spacing and return final list
     try:
-        npts=kw['npts']
-        delta=(xfin-xini)/float(npts-endpoint)
+        npts = kw['npts']
+        delta = (xfin-xini)/float(npts-endpoint)
     except KeyError:
         npts = int(round((xfin-xini)/delta)) + endpoint
-        #npts = int(floor((xfin-xini)/delta)*(1.0+1e-10)) + endpoint
         # round finds the nearest, so the endpoint can be up to
         # delta/2 larger than xfin.
 
@@ -2358,21 +2375,23 @@ def identity(n, rank=2, dtype='l', typecode=None):
         iden[idx] = 1
     return iden
 
-def base_repr (number, base = 2, padding = 0):
+
+def base_repr(number, base=2, padding=0):
     """
     Return the representation of a *number* in any given *base*.
     """
     chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    if number < base: \
-       return (padding - 1) * chars [0] + chars [int (number)]
-    max_exponent = int (math.log (number)/math.log (base))
-    max_power = long (base) ** max_exponent
-    lead_digit = int (number/max_power)
-    return chars [lead_digit] + \
-           base_repr (number - max_power * lead_digit, base, \
-                      max (padding - 1, max_exponent))
+    if number < base:
+        return (padding - 1) * chars[0] + chars[int(number)]
+    max_exponent = int(math.log(number)/math.log(base))
+    max_power = long(base) ** max_exponent
+    lead_digit = int(number/max_power)
+    return (chars[lead_digit] +
+            base_repr(number - max_power * lead_digit, base,
+                      max(padding - 1, max_exponent)))
 
-def binary_repr(number, max_length = 1025):
+
+def binary_repr(number, max_length=1025):
     """
     Return the binary representation of the input *number* as a
     string.
@@ -2384,15 +2403,17 @@ def binary_repr(number, max_length = 1025):
     which can be converted to a Python float.
     """
 
-    #assert number < 2L << max_length
-    shifts = list(map (operator.rshift, max_length * [number], \
-                  range (max_length - 1, -1, -1)))
-    digits = list(map (operator.mod, shifts, max_length * [2]))
-    if not digits.count (1): return 0
-    digits = digits [digits.index (1):]
-    return ''.join (map (repr, digits)).replace('L','')
+#   assert number < 2L << max_length
+    shifts = list(map(operator.rshift, max_length * [number],
+                  range(max_length - 1, -1, -1)))
+    digits = list(map(operator.mod, shifts, max_length * [2]))
+    if not digits.count(1):
+        return 0
+    digits = digits[digits.index(1):]
+    return ''.join(map(repr, digits)).replace('L', '')
 
-def log2(x,ln2 = math.log(2.0)):
+
+def log2(x, ln2=math.log(2.0)):
     """
     Return the log(*x*) in base 2.
 
@@ -2401,13 +2422,14 @@ def log2(x,ln2 = math.log(2.0)):
     """
     try:
         bin_n = binary_repr(x)[1:]
-    except (AssertionError,TypeError):
+    except (AssertionError, TypeError):
         return math.log(x)/ln2
     else:
         if '1' in bin_n:
             return math.log(x)/ln2
         else:
             return len(bin_n)
+
 
 def ispower2(n):
     """
@@ -2422,6 +2444,7 @@ def ispower2(n):
     else:
         return len(bin_n)
 
+
 def isvector(X):
     """
     Like the MATLAB function with the same name, returns *True*
@@ -2432,30 +2455,40 @@ def isvector(X):
 
     If you just want to see if the array has 1 axis, use X.ndim == 1.
     """
-    return np.prod(X.shape)==np.max(X.shape)
+    return np.prod(X.shape) == np.max(X.shape)
 
-### end fperez numutils code
+# end fperez numutils code
 
 
-#helpers for loading, saving, manipulating and viewing numpy record arrays
+# helpers for loading, saving, manipulating and viewing numpy record arrays
 
 def safe_isnan(x):
     ':func:`numpy.isnan` for arbitrary types'
     if cbook.is_string_like(x):
         return False
-    try: b = np.isnan(x)
-    except NotImplementedError: return False
-    except TypeError: return False
-    else: return b
+    try:
+        b = np.isnan(x)
+    except NotImplementedError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return b
+
 
 def safe_isinf(x):
     ':func:`numpy.isinf` for arbitrary types'
     if cbook.is_string_like(x):
         return False
-    try: b = np.isinf(x)
-    except NotImplementedError: return False
-    except TypeError: return False
-    else: return b
+    try:
+        b = np.isinf(x)
+    except NotImplementedError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return b
+
 
 def rec_append_fields(rec, names, arrs, dtypes=None):
     """
@@ -2464,11 +2497,11 @@ def rec_append_fields(rec, names, arrs, dtypes=None):
     *arrs* and *dtypes* do not have to be lists. They can just be the
     values themselves.
     """
-    if (not cbook.is_string_like(names) and cbook.iterable(names) \
+    if (not cbook.is_string_like(names) and cbook.iterable(names)
             and len(names) and cbook.is_string_like(names[0])):
         if len(names) != len(arrs):
             raise ValueError("number of arrays do not match number of names")
-    else: # we have only 1 name and 1 array
+    else:  # we have only 1 name and 1 array
         names = [names]
         arrs = [arrs]
     arrs = list(map(np.asarray, arrs))
@@ -2499,13 +2532,14 @@ def rec_drop_fields(rec, names):
     names = set(names)
 
     newdtype = np.dtype([(name, rec.dtype[name]) for name in rec.dtype.names
-                       if name not in names])
+                         if name not in names])
 
     newrec = np.recarray(rec.shape, dtype=newdtype)
     for field in newdtype.names:
         newrec[field] = rec[field]
 
     return newrec
+
 
 def rec_keep_fields(rec, names):
     """
@@ -2522,13 +2556,12 @@ def rec_keep_fields(rec, names):
     return np.rec.fromarrays(arrays, names=names)
 
 
-
 def rec_groupby(r, groupby, stats):
     """
     *r* is a numpy record array
 
     *groupby* is a sequence of record array attribute names that
-    together form the grouping key.  eg ('date', 'productcode')
+    together form the grouping key.  e.g., ('date', 'productcode')
 
     *stats* is a sequence of (*attr*, *func*, *outname*) tuples which
     will call ``x = func(attr)`` and assign *x* to the record array
@@ -2569,7 +2602,6 @@ def rec_groupby(r, groupby, stats):
     return np.rec.fromrecords(rows, names=names)
 
 
-
 def rec_summarize(r, summaryfuncs):
     """
     *r* is a numpy record array
@@ -2592,7 +2624,8 @@ def rec_summarize(r, summaryfuncs):
     return np.rec.fromarrays(arrays, names=names)
 
 
-def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2postfix='2'):
+def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1',
+             r2postfix='2'):
     """
     Join record arrays *r1* and *r2* on *key*; *key* is a tuple of
     field names -- if *key* is a string it is assumed to be a single
@@ -2618,15 +2651,15 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
 
     for name in key:
         if name not in r1.dtype.names:
-            raise ValueError('r1 does not have key field %s'%name)
+            raise ValueError('r1 does not have key field %s' % name)
         if name not in r2.dtype.names:
-            raise ValueError('r2 does not have key field %s'%name)
+            raise ValueError('r2 does not have key field %s' % name)
 
     def makekey(row):
         return tuple([row[name] for name in key])
 
-    r1d = dict([(makekey(row),i) for i,row in enumerate(r1)])
-    r2d = dict([(makekey(row),i) for i,row in enumerate(r2)])
+    r1d = dict([(makekey(row), i) for i, row in enumerate(r1)])
+    r2d = dict([(makekey(row), i) for i, row in enumerate(r2)])
 
     r1keys = set(r1d.keys())
     r2keys = set(r2d.keys())
@@ -2648,18 +2681,23 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
         right_len = len(right_ind)
 
     def key_desc(name):
-        'if name is a string key, use the larger size of r1 or r2 before merging'
+        '''
+        if name is a string key, use the larger size of r1 or r2 before
+        merging
+        '''
         dt1 = r1.dtype[name]
         if dt1.type != np.string_:
             return (name, dt1.descr[0][1])
 
-        dt2 = r1.dtype[name]
-        assert dt2==dt1
-        if dt1.num>dt2.num:
+        dt2 = r2.dtype[name]
+        if dt1 != dt2:
+            msg = "The '{}' fields in arrays 'r1' and 'r2' must have the same"
+            msg += " dtype."
+            raise ValueError(msg.format(name))
+        if dt1.num > dt2.num:
             return (name, dt1.descr[0][1])
         else:
             return (name, dt2.descr[0][1])
-
 
     keydesc = [key_desc(name) for name in key]
 
@@ -2667,18 +2705,24 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
         """
         The column name in *newrec* that corresponds to the column in *r1*.
         """
-        if name in key or name not in r2.dtype.names: return name
-        else: return name + r1postfix
+        if name in key or name not in r2.dtype.names:
+            return name
+        else:
+            return name + r1postfix
 
     def mapped_r2field(name):
         """
         The column name in *newrec* that corresponds to the column in *r2*.
         """
-        if name in key or name not in r1.dtype.names: return name
-        else: return name + r2postfix
+        if name in key or name not in r1.dtype.names:
+            return name
+        else:
+            return name + r2postfix
 
-    r1desc = [(mapped_r1field(desc[0]), desc[1]) for desc in r1.dtype.descr if desc[0] not in key]
-    r2desc = [(mapped_r2field(desc[0]), desc[1]) for desc in r2.dtype.descr if desc[0] not in key]
+    r1desc = [(mapped_r1field(desc[0]), desc[1]) for desc in r1.dtype.descr
+              if desc[0] not in key]
+    r2desc = [(mapped_r2field(desc[0]), desc[1]) for desc in r2.dtype.descr
+              if desc[0] not in key]
     newdtype = np.dtype(keydesc + r1desc + r2desc)
 
     newrec = np.recarray((common_len + left_len + right_len,), dtype=newdtype)
@@ -2686,15 +2730,16 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
     if defaults is not None:
         for thiskey in defaults:
             if thiskey not in newdtype.names:
-                warnings.warn('rec_join defaults key="%s" not in new dtype names "%s"'%(
-                    thiskey, newdtype.names))
+                warnings.warn('rec_join defaults key="%s" not in new dtype '
+                              'names "%s"' % (thiskey, newdtype.names))
 
     for name in newdtype.names:
         dt = newdtype[name]
         if dt.kind in ('f', 'i'):
             newrec[name] = 0
 
-    if jointype != 'inner' and defaults is not None: # fill in the defaults enmasse
+    if jointype != 'inner' and defaults is not None:
+        # fill in the defaults enmasse
         newrec_fields = list(six.iterkeys(newrec.dtype.fields.keys))
         for k, v in six.iteritems(defaults):
             if k in newrec_fields:
@@ -2705,7 +2750,9 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
         if common_len:
             newrec[newfield][:common_len] = r1[field][r1ind]
         if (jointype == "outer" or jointype == "leftouter") and left_len:
-            newrec[newfield][common_len:(common_len+left_len)] = r1[field][left_ind]
+            newrec[newfield][common_len:(common_len+left_len)] = (
+                r1[field][left_ind]
+            )
 
     for field in r2.dtype.names:
         newfield = mapped_r2field(field)
@@ -2717,6 +2764,7 @@ def rec_join(key, r1, r2, jointype='inner', defaults=None, r1postfix='1', r2post
     newrec.sort(order=key)
 
     return newrec
+
 
 def recs_join(key, name, recs, jointype='outer', missing=0., postfixes=None):
     """
@@ -2752,24 +2800,27 @@ def recs_join(key, name, recs, jointype='outer', missing=0., postfixes=None):
 
     """
     results = []
-    aligned_iters = cbook.align_iterators(operator.attrgetter(key), *[iter(r) for r in recs])
+    aligned_iters = cbook.align_iterators(operator.attrgetter(key),
+                                          *[iter(r) for r in recs])
 
     def extract(r):
-        if r is None: return missing
-        else: return r[name]
-
+        if r is None:
+            return missing
+        else:
+            return r[name]
 
     if jointype == "outer":
         for rowkey, row in aligned_iters:
             results.append([rowkey] + list(map(extract, row)))
     elif jointype == "inner":
         for rowkey, row in aligned_iters:
-            if None not in row: # throw out any Nones
+            if None not in row:  # throw out any Nones
                 results.append([rowkey] + list(map(extract, row)))
 
     if postfixes is None:
-        postfixes = ['%d'%i for i in range(len(recs))]
-    names = ",".join([key] + ["%s%s" % (name, postfix) for postfix in postfixes])
+        postfixes = ['%d' % i for i in range(len(recs))]
+    names = ",".join([key] + ["%s%s" % (name, postfix)
+                              for postfix in postfixes])
     return np.rec.fromrecords(results, names=names)
 
 
@@ -2812,17 +2863,21 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
     - *missing*: a string whose value signals a missing field regardless of
       the column it appears in
 
-    - *use_mrecords*: if True, return an mrecords.fromrecords record array if any of the data are missing
+    - *use_mrecords*: if True, return an mrecords.fromrecords record array if
+      any of the data are missing
 
     - *dayfirst*: default is False so that MM-DD-YY has precedence over
-      DD-MM-YY.  See http://labix.org/python-dateutil#head-b95ce2094d189a89f80f5ae52a05b4ab7b41af47
+      DD-MM-YY.  See
+      http://labix.org/python-dateutil#head-b95ce2094d189a89f80f5ae52a05b4ab7b41af47
       for further information.
 
     - *yearfirst*: default is False so that MM-DD-YY has precedence over
-      YY-MM-DD.  See http://labix.org/python-dateutil#head-b95ce2094d189a89f80f5ae52a05b4ab7b41af47
+      YY-MM-DD. See
+      http://labix.org/python-dateutil#head-b95ce2094d189a89f80f5ae52a05b4ab7b41af47
       for further information.
 
-      If no rows are found, *None* is returned -- see :file:`examples/loadrec.py`
+      If no rows are found, *None* is returned -- see
+      :file:`examples/loadrec.py`
     """
 
     if converterd is None:
@@ -2858,7 +2913,6 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
         def fix(self, s):
             return ' '.join(s.split())
 
-
         def __next__(self):
             return self.fix(next(self.fh))
 
@@ -2866,14 +2920,16 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
             for line in self.fh:
                 yield self.fix(line)
 
-    if delimiter==' ':
+    if delimiter == ' ':
         fh = FH(fh)
 
     reader = csv.reader(fh, delimiter=delimiter)
+
     def process_skiprows(reader):
         if skiprows:
             for i, row in enumerate(reader):
-                if i>=(skiprows-1): break
+                if i >= (skiprows-1):
+                    break
 
         return fh, reader
 
@@ -2895,14 +2951,16 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
                 return func(val)
         return newfunc
 
-
     def mybool(x):
-        if x=='True': return True
-        elif x=='False': return False
-        else: raise ValueError('invalid bool')
+        if x == 'True':
+            return True
+        elif x == 'False':
+            return False
+        else:
+            raise ValueError('invalid bool')
 
     dateparser = dateutil.parser.parse
-    mydateparser = with_default_value(dateparser, datetime.date(1,1,1))
+    mydateparser = with_default_value(dateparser, datetime.date(1, 1, 1))
     myfloat = with_default_value(float, np.nan)
     myint = with_default_value(int, -1)
     mystr = with_default_value(str, '')
@@ -2912,45 +2970,46 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
         # try and return a date object
         d = dateparser(x, dayfirst=dayfirst, yearfirst=yearfirst)
 
-        if d.hour>0 or d.minute>0 or d.second>0:
+        if d.hour > 0 or d.minute > 0 or d.second > 0:
             raise ValueError('not a date')
         return d.date()
-    mydate = with_default_value(mydate, datetime.date(1,1,1))
+    mydate = with_default_value(mydate, datetime.date(1, 1, 1))
 
     def get_func(name, item, func):
         # promote functions in this order
-        funcmap = {mybool:myint,myint:myfloat, myfloat:mydate, mydate:mydateparser, mydateparser:mystr}
-        try: func(name, item)
+        funcmap = {mybool: myint, myint: myfloat, myfloat: mydate,
+                   mydate: mydateparser, mydateparser: mystr}
+        try:
+            func(name, item)
         except:
-            if func==mystr:
-                raise ValueError('Could not find a working conversion function')
-            else: return get_func(name, item, funcmap[func])    # recurse
-        else: return func
-
+            if func == mystr:
+                raise ValueError('Could not find a working conversion '
+                                 'function')
+            else:
+                return get_func(name, item, funcmap[func])    # recurse
+        else:
+            return func
 
     # map column names that clash with builtins -- TODO - extend this list
     itemd = {
-        'return' : 'return_',
-        'file' : 'file_',
-        'print' : 'print_',
+        'return': 'return_',
+        'file':   'file_',
+        'print':  'print_',
         }
 
     def get_converters(reader):
 
         converters = None
         for i, row in enumerate(reader):
-            if i==0:
+            if i == 0:
                 converters = [mybool]*len(row)
-            if checkrows and i>checkrows:
+            if checkrows and i > checkrows:
                 break
-            #print i, len(names), len(row)
-            #print 'converters', zip(converters, row)
             for j, (name, item) in enumerate(zip(names, row)):
                 func = converterd.get(j)
                 if func is None:
                     func = converterd.get(name)
                 if func is None:
-                    #if not item.strip(): continue
                     func = converters[j]
                     if len(item.strip()):
                         func = get_func(name, item, func)
@@ -2965,8 +3024,8 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
 
     if needheader:
         for row in reader:
-            #print 'csv2rec', row
-            if len(row) and comments is not None and row[0].startswith(comments):
+            if (len(row) and comments is not None and
+                    row[0].startswith(comments)):
                 continue
             headers = row
             break
@@ -2981,12 +3040,12 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
             item = item.strip().lower().replace(' ', '_')
             item = ''.join([c for c in item if c not in delete])
             if not len(item):
-                item = 'column%d'%i
+                item = 'column%d' % i
 
             item = itemd.get(item, item)
             cnt = seen.get(item, 0)
-            if cnt>0:
-                names.append(item + '_%d'%cnt)
+            if cnt > 0:
+                names.append(item + '_%d' % cnt)
             else:
                 names.append(item)
             seen[item] = cnt+1
@@ -3009,7 +3068,8 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
         while 1:
             # skip past any comments and consume one line of column header
             row = next(reader)
-            if len(row) and comments is not None and row[0].startswith(comments):
+            if (len(row) and comments is not None and
+                    row[0].startswith(comments)):
                 continue
             break
 
@@ -3024,17 +3084,21 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
             continue
         # Ensure that the row returned always has the same nr of elements
         row.extend([''] * (len(converters) - len(row)))
-        rows.append([func(name, val) for func, name, val in zip(converters, names, row)])
-        rowmasks.append([ismissing(name, val) for name, val in zip(names, row)])
+        rows.append([func(name, val)
+                     for func, name, val in zip(converters, names, row)])
+        rowmasks.append([ismissing(name, val)
+                         for name, val in zip(names, row)])
     fh.close()
 
     if not len(rows):
         return None
 
     if use_mrecords and np.any(rowmasks):
-        try: from numpy.ma import mrecords
+        try:
+            from numpy.ma import mrecords
         except ImportError:
-            raise RuntimeError('numpy 1.05 or later is required for masked array support')
+            raise RuntimeError('numpy 1.05 or later is required for masked '
+                               'array support')
         else:
             r = mrecords.fromrecords(rows, names=names, mask=rowmasks)
     else:
@@ -3043,7 +3107,7 @@ def csv2rec(fname, comments='#', skiprows=0, checkrows=0, delimiter=',',
 
 
 # a series of classes for describing the format intentions of various rec views
-class FormatObj:
+class FormatObj(object):
     def tostr(self, x):
         return self.toval(x)
 
@@ -3053,22 +3117,18 @@ class FormatObj:
     def fromstr(self, s):
         return s
 
-
     def __hash__(self):
         """
-        override the hash function of any of the formatters, so that we don't create duplicate excel format styles
+        override the hash function of any of the formatters, so that we don't
+        create duplicate excel format styles
         """
         return hash(self.__class__)
+
 
 class FormatString(FormatObj):
     def tostr(self, x):
         val = repr(x)
         return val[1:-1]
-
-#class FormatString(FormatObj):
-#    def tostr(self, x):
-#        return '"%r"'%self.toval(x)
-
 
 
 class FormatFormatStr(FormatObj):
@@ -3076,15 +3136,14 @@ class FormatFormatStr(FormatObj):
         self.fmt = fmt
 
     def tostr(self, x):
-        if x is None: return 'None'
-        return self.fmt%self.toval(x)
-
-
+        if x is None:
+            return 'None'
+        return self.fmt % self.toval(x)
 
 
 class FormatFloat(FormatFormatStr):
     def __init__(self, precision=4, scale=1.):
-        FormatFormatStr.__init__(self, '%%1.%df'%precision)
+        FormatFormatStr.__init__(self, '%%1.%df' % precision)
         self.precision = precision
         self.scale = scale
 
@@ -3103,7 +3162,7 @@ class FormatFloat(FormatFormatStr):
 class FormatInt(FormatObj):
 
     def tostr(self, x):
-        return '%d'%int(x)
+        return '%d' % int(x)
 
     def toval(self, x):
         return int(x)
@@ -3111,18 +3170,19 @@ class FormatInt(FormatObj):
     def fromstr(self, s):
         return int(s)
 
+
 class FormatBool(FormatObj):
-
-
     def toval(self, x):
         return str(x)
 
     def fromstr(self, s):
         return bool(s)
 
+
 class FormatPercent(FormatFloat):
     def __init__(self, precision=4):
         FormatFloat.__init__(self, precision, scale=100.)
+
 
 class FormatThousands(FormatFloat):
     def __init__(self, precision=4):
@@ -3141,14 +3201,15 @@ class FormatDate(FormatObj):
     def __hash__(self):
         return hash((self.__class__, self.fmt))
 
-
     def toval(self, x):
-        if x is None: return 'None'
+        if x is None:
+            return 'None'
         return x.strftime(self.fmt)
 
     def fromstr(self, x):
         import dateutil.parser
         return dateutil.parser.parse(x).date()
+
 
 class FormatDatetime(FormatDate):
     def __init__(self, fmt='%Y-%m-%d %H:%M:%S'):
@@ -3159,18 +3220,17 @@ class FormatDatetime(FormatDate):
         return dateutil.parser.parse(x)
 
 
-
-
 defaultformatd = {
-    np.bool_ : FormatBool(),
-    np.int16 : FormatInt(),
-    np.int32 : FormatInt(),
-    np.int64 : FormatInt(),
-    np.float32 : FormatFloat(),
-    np.float64 : FormatFloat(),
-    np.object_ : FormatObj(),
-    np.string_ : FormatString(),
+    np.bool_:   FormatBool(),
+    np.int16:   FormatInt(),
+    np.int32:   FormatInt(),
+    np.int64:   FormatInt(),
+    np.float32: FormatFloat(),
+    np.float64: FormatFloat(),
+    np.object_: FormatObj(),
+    np.string_: FormatString(),
     }
+
 
 def get_formatd(r, formatd=None):
     'build a formatd guaranteed to have a key for every dtype name'
@@ -3185,12 +3245,14 @@ def get_formatd(r, formatd=None):
         formatd[name] = format
     return formatd
 
+
 def csvformat_factory(format):
     format = copy.deepcopy(format)
     if isinstance(format, FormatFloat):
-        format.scale = 1. # override scaling for storage
+        format.scale = 1.  # override scaling for storage
         format.fmt = '%r'
     return format
+
 
 def rec2txt(r, header=None, padding=3, precision=3, fields=None):
     """
@@ -3228,22 +3290,27 @@ def rec2txt(r, header=None, padding=3, precision=3, fields=None):
     if cbook.is_numlike(precision):
         precision = [precision]*len(r.dtype)
 
-    def get_type(item,atype=int):
-        tdict = {None:int, int:float, float:str}
-        try: atype(str(item))
-        except: return get_type(item,tdict[atype])
+    def get_type(item, atype=int):
+        tdict = {None: int, int: float, float: str}
+        try:
+            atype(str(item))
+        except:
+            return get_type(item, tdict[atype])
         return atype
 
     def get_justify(colname, column, precision):
         ntype = type(column[0])
 
-        if ntype==np.str or ntype==np.str_ or ntype==np.string0 or ntype==np.string_:
-            length = max(len(colname),column.itemsize)
-            return 0, length+padding, "%s" # left justify
+        if (ntype == np.str or ntype == np.str_ or ntype == np.string0 or
+                ntype == np.string_):
+            length = max(len(colname), column.itemsize)
+            return 0, length+padding, "%s"  # left justify
 
-        if ntype==np.int or ntype==np.int16 or ntype==np.int32 or ntype==np.int64 or ntype==np.int8 or ntype==np.int_:
-            length = max(len(colname),np.max(list(map(len, list(map(str,column))))))
-            return 1, length+padding, "%d" # right justify
+        if (ntype == np.int or ntype == np.int16 or ntype == np.int32 or
+                ntype == np.int64 or ntype == np.int8 or ntype == np.int_):
+            length = max(len(colname),
+                         np.max(list(map(len, list(map(str, column))))))
+            return 1, length+padding, "%d"  # right justify
 
         # JDH: my powerbook does not have np.float96 using np 1.3.0
         """
@@ -3251,37 +3318,48 @@ def rec2txt(r, header=None, padding=3, precision=3, fields=None):
         Out[2]: '1.3.0.dev5948'
 
         In [3]: !uname -a
-        Darwin Macintosh-5.local 9.4.0 Darwin Kernel Version 9.4.0: Mon Jun  9 19:30:53 PDT 2008; root:xnu-1228.5.20~1/RELEASE_I386 i386 i386
+        Darwin Macintosh-5.local 9.4.0 Darwin Kernel Version 9.4.0: Mon Jun
+        9 19:30:53 PDT 2008; root:xnu-1228.5.20~1/RELEASE_I386 i386 i386
 
         In [4]: np.float96
         ---------------------------------------------------------------------------
-        AttributeError                            Traceback (most recent call la
+        AttributeError                           Traceback (most recent call la
         """
-        if ntype==np.float or ntype==np.float32 or ntype==np.float64 or (hasattr(np, 'float96') and (ntype==np.float96)) or ntype==np.float_:
+        if (ntype == np.float or ntype == np.float32 or ntype == np.float64 or
+                (hasattr(np, 'float96') and (ntype == np.float96)) or
+                ntype == np.float_):
             fmt = "%." + str(precision) + "f"
-            length = max(len(colname),np.max(list(map(len, list(map(lambda x:fmt%x,column))))))
+            length = max(
+                len(colname),
+                np.max(list(map(len, list(map(lambda x: fmt % x, column)))))
+            )
             return 1, length+padding, fmt   # right justify
 
-        return 0, max(len(colname),np.max(list(map(len, list(map(str,column))))))+padding, "%s"
+        return (0,
+                max(len(colname),
+                    np.max(list(map(len, list(map(str, column))))))+padding,
+                "%s")
 
     if header is None:
         header = r.dtype.names
 
-    justify_pad_prec = [get_justify(header[i],r.__getitem__(colname),precision[i]) for i, colname in enumerate(r.dtype.names)]
+    justify_pad_prec = [get_justify(header[i], r.__getitem__(colname),
+                                    precision[i])
+                        for i, colname in enumerate(r.dtype.names)]
 
     justify_pad_prec_spacer = []
     for i in range(len(justify_pad_prec)):
-        just,pad,prec = justify_pad_prec[i]
+        just, pad, prec = justify_pad_prec[i]
         if i == 0:
-            justify_pad_prec_spacer.append((just,pad,prec,0))
+            justify_pad_prec_spacer.append((just, pad, prec, 0))
         else:
-            pjust,ppad,pprec = justify_pad_prec[i-1]
+            pjust, ppad, pprec = justify_pad_prec[i-1]
             if pjust == 0 and just == 1:
-                justify_pad_prec_spacer.append((just,pad-padding,prec,0))
+                justify_pad_prec_spacer.append((just, pad-padding, prec, 0))
             elif pjust == 1 and just == 0:
-                justify_pad_prec_spacer.append((just,pad,prec,padding))
+                justify_pad_prec_spacer.append((just, pad, prec, padding))
             else:
-                justify_pad_prec_spacer.append((just,pad,prec,0))
+                justify_pad_prec_spacer.append((just, pad, prec, 0))
 
     def format(item, just_pad_prec_spacer):
         just, pad, prec, spacer = just_pad_prec_spacer
@@ -3289,22 +3367,23 @@ def rec2txt(r, header=None, padding=3, precision=3, fields=None):
             return spacer*' ' + str(item).ljust(pad)
         else:
             if get_type(item) == float:
-                item = (prec%float(item))
+                item = (prec % float(item))
             elif get_type(item) == int:
-                item = (prec%int(item))
+                item = (prec % int(item))
 
             return item.rjust(pad)
 
     textl = []
-    textl.append(''.join([format(colitem,justify_pad_prec_spacer[j]) for j, colitem in enumerate(header)]))
+    textl.append(''.join([format(colitem, justify_pad_prec_spacer[j])
+                          for j, colitem in enumerate(header)]))
     for i, row in enumerate(r):
-        textl.append(''.join([format(colitem,justify_pad_prec_spacer[j]) for j, colitem in enumerate(row)]))
-        if i==0:
+        textl.append(''.join([format(colitem, justify_pad_prec_spacer[j])
+                              for j, colitem in enumerate(row)]))
+        if i == 0:
             textl[0] = textl[0].rstrip()
 
     text = os.linesep.join(textl)
     return text
-
 
 
 def rec2csv(r, fname, delimiter=',', formatd=None, missing='',
@@ -3460,10 +3539,11 @@ def griddata(x, y, z, xi, yi, interp='nn'):
             from mpl_toolkits.natgrid import _natgrid
         except ImportError:
             raise RuntimeError("To use interp='nn' (Natural Neighbor "
-                "interpolation) in griddata, natgrid must be installed.  "
-                "Either install it from http://sourceforge.net/projects/"
-                "matplotlib/files/matplotlib-toolkits, or use interp='linear' "
-                "instead.")
+                               "interpolation) in griddata, natgrid must be "
+                               "installed. Either install it from http://"
+                               "sourceforge.net/projects/matplotlib/files/"
+                               "matplotlib-toolkits, or use interp='linear' "
+                               "instead.")
 
         if xi.ndim == 2:
             # natgrid expects 1D xi and yi arrays.
@@ -3471,8 +3551,8 @@ def griddata(x, y, z, xi, yi, interp='nn'):
             yi = yi[:, 0]
 
         # Override default natgrid internal parameters.
-        _natgrid.seti('ext', 0)
-        _natgrid.setr('nul', np.nan)
+        _natgrid.seti(b'ext', 0)
+        _natgrid.setr(b'nul', np.nan)
 
         if np.min(np.diff(xi)) < 0 or np.min(np.diff(yi)) < 0:
             raise ValueError("Output grid defined by xi,yi must be monotone "
@@ -3507,7 +3587,7 @@ def griddata(x, y, z, xi, yi, interp='nn'):
 ##################################################
 # Linear interpolation algorithms
 ##################################################
-def less_simple_linear_interpolation( x, y, xi, extrap=False ):
+def less_simple_linear_interpolation(x, y, xi, extrap=False):
     """
     This function provides simple (but somewhat less so than
     :func:`cbook.simple_linear_interpolation`) linear interpolation.
@@ -3519,7 +3599,8 @@ def less_simple_linear_interpolation( x, y, xi, extrap=False ):
     only for a small number of points in relatively non-intensive use
     cases.  For real linear interpolation, use scipy.
     """
-    if cbook.is_scalar(xi): xi = [xi]
+    if cbook.is_scalar(xi):
+        xi = [xi]
 
     x = np.asarray(x)
     y = np.asarray(y)
@@ -3527,28 +3608,29 @@ def less_simple_linear_interpolation( x, y, xi, extrap=False ):
 
     s = list(y.shape)
     s[0] = len(xi)
-    yi = np.tile( np.nan, s )
+    yi = np.tile(np.nan, s)
 
-    for ii,xx in enumerate(xi):
+    for ii, xx in enumerate(xi):
         bb = x == xx
         if np.any(bb):
             jj, = np.nonzero(bb)
             yi[ii] = y[jj[0]]
-        elif xx<x[0]:
+        elif xx < x[0]:
             if extrap:
                 yi[ii] = y[0]
-        elif xx>x[-1]:
+        elif xx > x[-1]:
             if extrap:
                 yi[ii] = y[-1]
         else:
-            jj, = np.nonzero(x<xx)
+            jj, = np.nonzero(x < xx)
             jj = max(jj)
 
             yi[ii] = y[jj] + (xx-x[jj])/(x[jj+1]-x[jj]) * (y[jj+1]-y[jj])
 
     return yi
 
-def slopes(x,y):
+
+def slopes(x, y):
     """
     :func:`slopes` calculates the slope *y*'(*x*)
 
@@ -3575,13 +3657,13 @@ def slopes(x,y):
     Icelandic Meteorological Office, March 2006 halldor at vedur.is)
     """
     # Cast key variables as float.
-    x=np.asarray(x, np.float_)
-    y=np.asarray(y, np.float_)
+    x = np.asarray(x, np.float_)
+    y = np.asarray(y, np.float_)
 
-    yp=np.zeros(y.shape, np.float_)
+    yp = np.zeros(y.shape, np.float_)
 
-    dx=x[1:] - x[:-1]
-    dy=y[1:] - y[:-1]
+    dx = x[1:] - x[:-1]
+    dy = y[1:] - y[:-1]
     dydx = dy/dx
     yp[1:-1] = (dydx[:-1] * dx[1:] + dydx[1:] * dx[:-1])/(dx[1:] + dx[:-1])
     yp[0] = 2.0 * dy[0]/dx[0] - yp[1]
@@ -3589,7 +3671,7 @@ def slopes(x,y):
     return yp
 
 
-def stineman_interp(xi,x,y,yp=None):
+def stineman_interp(xi, x, y, yp=None):
     """
     Given data vectors *x* and *y*, the slope vector *yp* and a new
     abscissa vector *xi*, the function :func:`stineman_interp` uses
@@ -3632,29 +3714,30 @@ def stineman_interp(xi,x,y,yp=None):
     """
 
     # Cast key variables as float.
-    x=np.asarray(x, np.float_)
-    y=np.asarray(y, np.float_)
+    x = np.asarray(x, np.float_)
+    y = np.asarray(y, np.float_)
     assert x.shape == y.shape
 
     if yp is None:
-        yp = slopes(x,y)
+        yp = slopes(x, y)
     else:
-        yp=np.asarray(yp, np.float_)
+        yp = np.asarray(yp, np.float_)
 
-    xi=np.asarray(xi, np.float_)
-    yi=np.zeros(xi.shape, np.float_)
+    xi = np.asarray(xi, np.float_)
+    yi = np.zeros(xi.shape, np.float_)
 
     # calculate linear slopes
     dx = x[1:] - x[:-1]
     dy = y[1:] - y[:-1]
-    s = dy/dx  #note length of s is N-1 so last element is #N-2
+    s = dy/dx  # note length of s is N-1 so last element is #N-2
 
     # find the segment each xi is in
     # this line actually is the key to the efficiency of this implementation
     idx = np.searchsorted(x[1:-1], xi)
 
     # now we have generally: x[idx[j]] <= xi[j] <= x[idx[j]+1]
-    # except at the boundaries, where it may be that xi[j] < x[0] or xi[j] > x[-1]
+    # except at the boundaries, where it may be that xi[j] < x[0] or
+    # xi[j] > x[-1]
 
     # the y-values that would come out from a linear interpolation:
     sidx = s.take(idx)
@@ -3664,8 +3747,10 @@ def stineman_interp(xi,x,y,yp=None):
     yo = yidx + sidx * (xi - xidx)
 
     # the difference that comes when using the slopes given in yp
-    dy1 = (yp.take(idx)- sidx) * (xi - xidx)       # using the yp slope of the left point
-    dy2 = (yp.take(idx+1)-sidx) * (xi - xidxp1) # using the yp slope of the right point
+    # using the yp slope of the left point
+    dy1 = (yp.take(idx) - sidx) * (xi - xidx)
+    # using the yp slope of the right point
+    dy2 = (yp.take(idx+1)-sidx) * (xi - xidxp1)
 
     dy1dy2 = dy1*dy2
     # The following is optimized for Python. The solution actually
@@ -3677,6 +3762,168 @@ def stineman_interp(xi,x,y,yp=None):
                                   0.0,
                                   1/(dy1+dy2),))
     return yi
+
+
+class GaussianKDE(object):
+    """
+    Representation of a kernel-density estimate using Gaussian kernels.
+
+    Call signature::
+    kde = GaussianKDE(dataset, bw_method='silverman')
+
+    Parameters
+    ----------
+    dataset : array_like
+        Datapoints to estimate from. In case of univariate data this is a 1-D
+        array, otherwise a 2-D array with shape (# of dims, # of data).
+
+    bw_method : str, scalar or callable, optional
+        The method used to calculate the estimator bandwidth.  This can be
+        'scott', 'silverman', a scalar constant or a callable.  If a
+        scalar, this will be used directly as `kde.factor`.  If a
+        callable, it should take a `GaussianKDE` instance as only
+        parameter and return a scalar. If None (default), 'scott' is used.
+
+    Attributes
+    ----------
+    dataset : ndarray
+        The dataset with which `gaussian_kde` was initialized.
+
+    dim : int
+        Number of dimensions.
+
+    num_dp : int
+        Number of datapoints.
+
+    factor : float
+        The bandwidth factor, obtained from `kde.covariance_factor`, with which
+        the covariance matrix is multiplied.
+
+    covariance : ndarray
+        The covariance matrix of `dataset`, scaled by the calculated bandwidth
+        (`kde.factor`).
+
+    inv_cov : ndarray
+        The inverse of `covariance`.
+
+    Methods
+    -------
+    kde.evaluate(points) : ndarray
+        Evaluate the estimated pdf on a provided set of points.
+
+    kde(points) : ndarray
+        Same as kde.evaluate(points)
+
+    """
+
+    # This implementation with minor modification was too good to pass up.
+    # from scipy: https://github.com/scipy/scipy/blob/master/scipy/stats/kde.py
+
+    def __init__(self, dataset, bw_method=None):
+        self.dataset = np.atleast_2d(dataset)
+        if not np.array(self.dataset).size > 1:
+            raise ValueError("`dataset` input should have multiple elements.")
+
+        self.dim, self.num_dp = np.array(self.dataset).shape
+        isString = isinstance(bw_method, six.string_types)
+
+        if bw_method is None:
+            pass
+        elif (isString and bw_method == 'scott'):
+            self.covariance_factor = self.scotts_factor
+        elif (isString and bw_method == 'silverman'):
+            self.covariance_factor = self.silverman_factor
+        elif (np.isscalar(bw_method) and not isString):
+                self._bw_method = 'use constant'
+                self.covariance_factor = lambda: bw_method
+        elif callable(bw_method):
+            self._bw_method = bw_method
+            self.covariance_factor = lambda: self._bw_method(self)
+        else:
+            msg = "`bw_method` should be 'scott', 'silverman', a scalar " \
+                  "or a callable."
+            raise ValueError(msg)
+
+        # Computes the covariance matrix for each Gaussian kernel using
+        # covariance_factor().
+
+        self.factor = self.covariance_factor()
+        # Cache covariance and inverse covariance of the data
+        if not hasattr(self, '_data_inv_cov'):
+            self.data_covariance = np.atleast_2d(
+                np.cov(
+                    self.dataset,
+                    rowvar=1,
+                    bias=False))
+            self.data_inv_cov = np.linalg.inv(self.data_covariance)
+
+        self.covariance = self.data_covariance * self.factor ** 2
+        self.inv_cov = self.data_inv_cov / self.factor ** 2
+        self.norm_factor = np.sqrt(
+            np.linalg.det(
+                2 * np.pi * self.covariance)) * self.num_dp
+
+    def scotts_factor(self):
+        return np.power(self.num_dp, -1. / (self.dim + 4))
+
+    def silverman_factor(self):
+        return np.power(
+            self.num_dp * (self.dim + 2.0) / 4.0, -1. / (self.dim + 4))
+
+    #  Default method to calculate bandwidth, can be overwritten by subclass
+    covariance_factor = scotts_factor
+
+    def evaluate(self, points):
+        """Evaluate the estimated pdf on a set of points.
+
+        Parameters
+        ----------
+        points : (# of dimensions, # of points)-array
+            Alternatively, a (# of dimensions,) vector can be passed in and
+            treated as a single point.
+
+        Returns
+        -------
+        values : (# of points,)-array
+            The values at each point.
+
+        Raises
+        ------
+        ValueError : if the dimensionality of the input points is different
+                     than the dimensionality of the KDE.
+
+        """
+        points = np.atleast_2d(points)
+
+        dim, num_m = np.array(points).shape
+        if dim != self.dim:
+            msg = "points have dimension %s, dataset has dimension %s" % (
+                dim, self.dim)
+            raise ValueError(msg)
+
+        result = np.zeros((num_m,), dtype=np.float)
+
+        if num_m >= self.num_dp:
+            # there are more points than data, so loop over data
+            for i in range(self.num_dp):
+                diff = self.dataset[:, i, np.newaxis] - points
+                tdiff = np.dot(self.inv_cov, diff)
+                energy = np.sum(diff * tdiff, axis=0) / 2.0
+                result = result + np.exp(-energy)
+        else:
+            # loop over points
+            for i in range(num_m):
+                diff = self.dataset - points[:, i, np.newaxis]
+                tdiff = np.dot(self.inv_cov, diff)
+                energy = np.sum(diff * tdiff, axis=0) / 2.0
+                result[i] = np.sum(np.exp(-energy), axis=0)
+
+        result = result / self.norm_factor
+
+        return result
+
+    __call__ = evaluate
+
 
 ##################################################
 # Code related to things in and around polygons
@@ -3690,10 +3937,11 @@ def inside_poly(points, verts):
     that are inside the polygon.
     """
     # Make a closed polygon path
-    poly = Path( verts )
+    poly = Path(verts)
 
     # Check to see which points are contained withing the Path
-    return [ idx for idx, p in enumerate(points) if poly.contains_point(p) ]
+    return [idx for idx, p in enumerate(points) if poly.contains_point(p)]
+
 
 def poly_below(xmin, xs, ys):
     """
@@ -3701,7 +3949,7 @@ def poly_below(xmin, xs, ys):
     polygon that has a horizontal base at *xmin* and an upper bound at
     the *ys*.  *xmin* is a scalar.
 
-    Intended for use with :meth:`matplotlib.axes.Axes.fill`, eg::
+    Intended for use with :meth:`matplotlib.axes.Axes.fill`, e.g.,::
 
       xv, yv = poly_below(0, x, y)
       ax.fill(xv, yv)
@@ -3715,14 +3963,13 @@ def poly_below(xmin, xs, ys):
     ys = numpy.asarray(ys)
     Nx = len(xs)
     Ny = len(ys)
-    assert(Nx==Ny)
+    assert(Nx == Ny)
     x = xmin*numpy.ones(2*Nx)
     y = numpy.ones(2*Nx)
     x[:Nx] = xs
     y[:Nx] = ys
     y[Nx:] = ys[::-1]
     return x, y
-
 
 
 def poly_between(x, ylower, yupper):
@@ -3735,7 +3982,8 @@ def poly_between(x, ylower, yupper):
     Return value is *x*, *y* arrays for use with
     :meth:`matplotlib.axes.Axes.fill`.
     """
-    if ma.isMaskedArray(ylower) or ma.isMaskedArray(yupper) or ma.isMaskedArray(x):
+    if (ma.isMaskedArray(ylower) or ma.isMaskedArray(yupper) or
+            ma.isMaskedArray(x)):
         numpy = ma
     else:
         numpy = np
@@ -3747,9 +3995,9 @@ def poly_between(x, ylower, yupper):
     if not cbook.iterable(yupper):
         yupper = yupper*numpy.ones(Nx)
 
-    x = numpy.concatenate( (x, x[::-1]) )
-    y = numpy.concatenate( (yupper, ylower[::-1]) )
-    return x,y
+    x = numpy.concatenate((x, x[::-1]))
+    y = numpy.concatenate((yupper, ylower[::-1]))
+    return x, y
 
 
 def is_closed_polygon(X):
@@ -3766,7 +4014,8 @@ def contiguous_regions(mask):
     return a list of (ind0, ind1) such that mask[ind0:ind1].all() is
     True and we cover all such regions
 
-    TODO: this is a pure python implementation which probably has a much faster numpy impl
+    TODO: this is a pure python implementation which probably has a much
+    faster numpy impl
     """
 
     in_region = None
@@ -3786,7 +4035,7 @@ def contiguous_regions(mask):
 def cross_from_below(x, threshold):
     """
     return the indices into *x* where *x* crosses some threshold from
-    below, eg the i's where::
+    below, e.g., the i's where::
 
       x[i-1]<threshold and x[i]>=threshold
 
@@ -3818,14 +4067,17 @@ def cross_from_below(x, threshold):
     """
     x = np.asarray(x)
     threshold = threshold
-    ind = np.nonzero( (x[:-1]<threshold) & (x[1:]>=threshold))[0]
-    if len(ind): return ind+1
-    else: return ind
+    ind = np.nonzero((x[:-1] < threshold) & (x[1:] >= threshold))[0]
+    if len(ind):
+        return ind+1
+    else:
+        return ind
+
 
 def cross_from_above(x, threshold):
     """
     return the indices into *x* where *x* crosses some threshold from
-    below, eg the i's where::
+    below, e.g., the i's where::
 
       x[i-1]>threshold and x[i]<=threshold
 
@@ -3835,14 +4087,17 @@ def cross_from_above(x, threshold):
 
     """
     x = np.asarray(x)
-    ind = np.nonzero( (x[:-1]>=threshold) & (x[1:]<threshold))[0]
-    if len(ind): return ind+1
-    else: return ind
+    ind = np.nonzero((x[:-1] >= threshold) & (x[1:] < threshold))[0]
+    if len(ind):
+        return ind+1
+    else:
+        return ind
+
 
 ##################################################
 # Vector and path length geometry calculations
 ##################################################
-def vector_lengths( X, P=2., axis=None ):
+def vector_lengths(X, P=2., axis=None):
     """
     Finds the length of a set of vectors in *n* dimensions.  This is
     like the :func:`numpy.norm` function for vectors, but has the ability to
@@ -3853,9 +4108,10 @@ def vector_lengths( X, P=2., axis=None ):
     compute over all elements of *X*.
     """
     X = np.asarray(X)
-    return (np.sum(X**(P),axis=axis))**(1./P)
+    return (np.sum(X**(P), axis=axis))**(1./P)
 
-def distances_along_curve( X ):
+
+def distances_along_curve(X):
     """
     Computes the distance between a set of successive points in *N* dimensions.
 
@@ -3863,8 +4119,9 @@ def distances_along_curve( X ):
     successive rows is computed.  Distance is the standard Euclidean
     distance.
     """
-    X = np.diff( X, axis=0 )
-    return vector_lengths(X,axis=1)
+    X = np.diff(X, axis=0)
+    return vector_lengths(X, axis=1)
+
 
 def path_length(X):
     """
@@ -3875,7 +4132,8 @@ def path_length(X):
     (i.e., the rows of *X*).
     """
     X = distances_along_curve(X)
-    return np.concatenate( (np.zeros(1), np.cumsum(X)) )
+    return np.concatenate((np.zeros(1), np.cumsum(X)))
+
 
 def quad2cubic(q0x, q0y, q1x, q1y, q2x, q2y):
     """
@@ -3891,9 +4149,11 @@ def quad2cubic(q0x, q0y, q1x, q1y, q2x, q2y):
     # c3x, c3y = q2x, q2y
     return q0x, q0y, c1x, c1y, c2x, c2y, q2x, q2y
 
+
 def offset_line(y, yerr):
     """
-    Offsets an array *y* by +/- an error and returns a tuple (y - err, y + err).
+    Offsets an array *y* by +/- an error and returns a tuple
+    (y - err, y + err).
 
     The error term can be:
 
@@ -3912,7 +4172,8 @@ def offset_line(y, yerr):
         show()
 
     """
-    if cbook.is_numlike(yerr) or (cbook.iterable(yerr) and len(yerr) == len(y)):
+    if cbook.is_numlike(yerr) or (cbook.iterable(yerr) and
+                                  len(yerr) == len(y)):
         ymin = y - yerr
         ymax = y + yerr
     elif len(yerr) == 2:

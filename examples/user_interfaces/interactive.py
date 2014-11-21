@@ -40,11 +40,12 @@ except ImportError:
 else:
     has_readline = True
 
+
 class MTConsole(code.InteractiveConsole):
     """Simple multi-threaded shell"""
 
-    def __init__(self,on_kill=None,*args,**kw):
-        code.InteractiveConsole.__init__(self,*args,**kw)
+    def __init__(self, on_kill=None, *args, **kw):
+        code.InteractiveConsole.__init__(self, *args, **kw)
         self.code_to_run = None
         self.ready = threading.Condition()
         self._kill = False
@@ -53,14 +54,14 @@ class MTConsole(code.InteractiveConsole):
         # Check that all things to kill are callable:
         for _ in on_kill:
             if not callable(_):
-                raise TypeError,'on_kill must be a list of callables'
+                raise TypeError('on_kill must be a list of callables')
         self.on_kill = on_kill
         # Set up tab-completer
         if has_readline:
             import rlcompleter
             try:  # this form only works with python 2.3
                 self.completer = rlcompleter.Completer(self.locals)
-            except: # simpler for py2.2
+            except:  # simpler for py2.2
                 self.completer = rlcompleter.Completer()
 
             readline.set_completer(self.completer.complete)
@@ -134,17 +135,18 @@ class MTConsole(code.InteractiveConsole):
 
         if self.code_to_run is not None:
             self.ready.notify()
-            code.InteractiveConsole.runcode(self,self.code_to_run)
+            code.InteractiveConsole.runcode(self, self.code_to_run)
 
         self.code_to_run = None
         self.ready.release()
         return True
 
-    def kill (self):
+    def kill(self):
         """Kill the thread, returning when it has been shut down."""
         self.ready.acquire()
         self._kill = True
         self.ready.release()
+
 
 class GTKInterpreter(threading.Thread):
     """Run gtk.main in the main thread and a python interpreter in a
@@ -153,9 +155,9 @@ class GTKInterpreter(threading.Thread):
     This is implemented by periodically checking for passed code using a
     GTK timeout callback.
     """
-    TIMEOUT = 100 # Millisecond interval between timeouts.
+    TIMEOUT = 100  # Millisecond interval between timeouts.
 
-    def __init__(self,banner=None):
+    def __init__(self, banner=None):
         threading.Thread.__init__(self)
         self.banner = banner
         self.shell = MTConsole(on_kill=[gtk.main_quit])
@@ -184,18 +186,19 @@ class GTKInterpreter(threading.Thread):
 
         pass
 
+
 class MatplotLibInterpreter(GTKInterpreter):
     """Threaded interpreter with matplotlib support.
 
     Note that this explicitly sets GTKAgg as the backend, since it has
     specific GTK hooks in it."""
 
-    def __init__(self,banner=None):
+    def __init__(self, banner=None):
         banner = """\nWelcome to matplotlib, a MATLAB-like python environment.
     help(matlab)   -> help on matlab compatible commands from matplotlib.
     help(plotting) -> help on plotting commands.
     """
-        GTKInterpreter.__init__(self,banner)
+        GTKInterpreter.__init__(self, banner)
 
     def pre_interact(self):
         """Initialize matplotlib before user interaction begins"""
@@ -208,12 +211,12 @@ class MatplotLibInterpreter(GTKInterpreter):
                  "import matplotlib.pylab as pylab",
                  "from matplotlib.pylab import *\n"]
 
-        map(push,lines)
+        map(push, lines)
 
         # Execute file if given.
-        if len(sys.argv)>1:
+        if len(sys.argv) > 1:
             import matplotlib
-            matplotlib.interactive(0) # turn off interaction
+            matplotlib.interactive(0)  # turn off interaction
             fname = sys.argv[1]
             try:
                 inFile = file(fname, 'r')
@@ -222,7 +225,8 @@ class MatplotLibInterpreter(GTKInterpreter):
             else:
                 print('*** Executing file <%s>:' % fname)
                 for line in inFile:
-                    if line.lstrip().find('show()')==0: continue
+                    if line.lstrip().find('show()') == 0:
+                        continue
                     print('>>', line)
                     push(line)
                 inFile.close()
@@ -234,8 +238,8 @@ if __name__ == '__main__':
     sys.exit()
     # Quick sys.argv hack to extract the option and leave filenames in sys.argv.
     # For real option handling, use optparse or getopt.
-    if len(sys.argv) > 1 and sys.argv[1]=='-pylab':
-        sys.argv = [sys.argv[0]]+sys.argv[2:]
+    if len(sys.argv) > 1 and sys.argv[1] == '-pylab':
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
         MatplotLibInterpreter().mainloop()
     else:
         GTKInterpreter().mainloop()

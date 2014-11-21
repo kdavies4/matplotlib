@@ -462,9 +462,9 @@ class CubicTriInterpolator(TriInterpolator):
             dzdx = self._ReferenceElement.get_function_derivatives(
                 alpha, J, ecc, dof)
             if return_key == 'dzdx':
-                return dzdx[:, 0]
+                return dzdx[:, 0, 0]
             else:
-                return dzdx[:, 1]
+                return dzdx[:, 1, 0]
         else:
             raise ValueError("Invalid return_key: " + return_key)
 
@@ -1244,7 +1244,7 @@ class _DOF_estimator_min_E(_DOF_estimator_geom):
 
 # The following private :class:_Sparse_Matrix_coo and :func:_cg provide
 # a PCG sparse solver for (symmetric) elliptic problems.
-class _Sparse_Matrix_coo:
+class _Sparse_Matrix_coo(object):
     def __init__(self, vals, rows, cols, shape):
         """
         Creates a sparse matrix in coo format

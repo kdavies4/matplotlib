@@ -56,6 +56,7 @@ backend_version = 'Level II'
 
 debugPS = 0
 
+
 class PsBackendHelper(object):
 
     def __init__(self):
@@ -78,7 +79,6 @@ class PsBackendHelper(object):
         self._cached["gs_exe"] = gs_exe
         return gs_exe
 
-
     @property
     def gs_version(self):
         """
@@ -90,14 +90,18 @@ class PsBackendHelper(object):
             pass
 
         from matplotlib.compat.subprocess import Popen, PIPE
-        pipe = Popen(self.gs_exe + " --version",
-                     shell=True, stdout=PIPE).stdout
+        s = Popen(self.gs_exe + " --version",
+                     shell=True, stdout=PIPE)
+        pipe, stderr = s.communicate()
         if six.PY3:
-            ver = pipe.read().decode('ascii')
+            ver = pipe.decode('ascii')
         else:
-            ver = pipe.read()
-        gs_version = tuple(map(int, ver.strip().split(".")))
-
+            ver = pipe
+        try:
+            gs_version = tuple(map(int, ver.strip().split(".")))
+        except ValueError:
+            # if something went wrong parsing return null version number
+            gs_version = (0, 0)
         self._cached["gs_version"] = gs_version
         return gs_version
 
@@ -410,13 +414,14 @@ class RendererPS(RendererBase):
 
         rgba = np.fromstring(s, np.uint8)
         rgba.shape = (h, w, 4)
-        rgb = rgba[:,:,:3]
+        rgb = rgba[::-1,:,:3]
         return h, w, rgb.tostring()
 
     def _gray(self, im, rc=0.3, gc=0.59, bc=0.11):
         rgbat = im.as_rgba_str()
         rgba = np.fromstring(rgbat[2], np.uint8)
         rgba.shape = (rgbat[0], rgbat[1], 4)
+        rgba = rgba[::-1]
         rgba_f = rgba.astype(np.float32)
         r = rgba_f[:,:,0]
         g = rgba_f[:,:,1]
@@ -468,8 +473,6 @@ class RendererPS(RendererBase):
         interpreted as the coordinate of the transform.
         """
 
-        im.flipud_out()
-
         h, w, bits, imagecmd = self._get_image_h_w_bits_command(im)
         hexlines = b'\n'.join(self._hex_lines(bits)).decode('ascii')
 
@@ -520,9 +523,6 @@ grestore
 """ % locals()
         self._pswriter.write(ps)
 
-        # unflip
-        im.flipud_out()
-
     def _convert_path(self, path, transform, clip=False, simplify=None):
         ps = []
         last_points = None
@@ -554,16 +554,17 @@ grestore
         return ps
 
     def _get_clip_path(self, clippath, clippath_transform):
-        id = self._clip_paths.get((clippath, clippath_transform))
-        if id is None:
-            id = 'c%x' % len(self._clip_paths)
-            ps_cmd = ['/%s {' % id]
+        key = (clippath, id(clippath_transform))
+        pid = self._clip_paths.get(key)
+        if pid is None:
+            pid = 'c%x' % len(self._clip_paths)
+            ps_cmd = ['/%s {' % pid]
             ps_cmd.append(self._convert_path(clippath, clippath_transform,
                                              simplify=False))
             ps_cmd.extend(['clip', 'newpath', '} bind def\n'])
             self._pswriter.write('\n'.join(ps_cmd))
-            self._clip_paths[(clippath, clippath_transform)] = id
-        return id
+            self._clip_paths[key] = pid
+        return pid
 
     def draw_path(self, gc, path, transform, rgbFace=None):
         """
@@ -632,6 +633,23 @@ grestore
                              offsets, offsetTrans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
                              offset_position):
+        # Is the optimization worth it? Rough calculation:
+        # cost of emitting a path in-line is
+        #     (len_path + 2) * uses_per_path
+        # cost of definition+use is
+        #     (len_path + 3) + 3 * uses_per_path
+        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
+        uses_per_path = self._iter_collection_uses_per_path(
+            paths, all_transforms, offsets, facecolors, edgecolors)
+        should_do_optimization = \
+            len_path + 3 * uses_per_path + 3 < (len_path + 2) * uses_per_path
+        if not should_do_optimization:
+            return RendererBase.draw_path_collection(
+                self, gc, master_transform, paths, all_transforms,
+                offsets, offsetTrans, facecolors, edgecolors,
+                linewidths, linestyles, antialiaseds, urls,
+                offset_position)
+
         write = self._pswriter.write
 
         path_codes = []
@@ -759,7 +777,7 @@ grestore
             except KeyError:
                 ps_name = sfnt[(3,1,0x0409,6)].decode(
                     'utf-16be')
-            ps_name = ps_name.encode('ascii', 'replace')
+            ps_name = ps_name.encode('ascii', 'replace').decode('ascii')
             self.set_font(ps_name, prop.get_size_in_points())
 
             cmap = font.get_charmap()

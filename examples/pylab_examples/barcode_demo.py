@@ -3,7 +3,7 @@ from numpy import where
 from numpy.random import rand
 
 # the bar
-x = where(rand(500)>0.7, 1.0, 0.0)
+x = where(rand(500) > 0.7, 1.0, 0.0)
 
 axprops = dict(xticks=[], yticks=[])
 barprops = dict(aspect='auto', cmap=cm.binary, interpolation='nearest')
@@ -23,4 +23,3 @@ ax.imshow(x, **barprops)
 
 
 show()
-

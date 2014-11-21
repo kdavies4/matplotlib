@@ -151,7 +151,7 @@ class AxesStack(Stack):
         return a in self.as_list()
 
 
-class SubplotParams:
+class SubplotParams(object):
     """
     A class to hold the parameters for a subplot
     """
@@ -518,11 +518,16 @@ class Figure(Artist):
         """
         x = kwargs.pop('x', 0.5)
         y = kwargs.pop('y', 0.98)
+
         if ('horizontalalignment' not in kwargs) and ('ha' not in kwargs):
             kwargs['horizontalalignment'] = 'center'
-
         if ('verticalalignment' not in kwargs) and ('va' not in kwargs):
             kwargs['verticalalignment'] = 'top'
+
+        if 'fontsize' not in kwargs:
+            kwargs['fontsize'] = rcParams['figure.titlesize']
+        if 'fontweight' not in kwargs:
+            kwargs['fontweight'] = rcParams['figure.titleweight']
 
         sup = self.text(x, y, t, **kwargs)
         if self._suptitle is not None:
@@ -595,7 +600,7 @@ class Figure(Artist):
           Keyword     Description
           =========   =========================================================
           xo or yo    An integer, the *x* and *y* image offset in pixels
-          cmap        a :class:`matplotlib.colors.Colormap` instance, eg
+          cmap        a :class:`matplotlib.colors.Colormap` instance, e.g.,
                       cm.jet. If *None*, default to the rc ``image.cmap``
                       value
           norm        a :class:`matplotlib.colors.Normalize` instance. The
@@ -641,7 +646,7 @@ class Figure(Artist):
         """
         set_size_inches(w,h, forward=False)
 
-        Set the figure size in inches
+        Set the figure size in inches (1in == 2.54cm)
 
         Usage::
 
@@ -649,10 +654,15 @@ class Figure(Artist):
              fig.set_size_inches((w,h) )
 
         optional kwarg *forward=True* will cause the canvas size to be
-        automatically updated; eg you can resize the figure window
+        automatically updated; e.g., you can resize the figure window
         from the shell
 
         ACCEPTS: a w,h tuple with w,h in inches
+
+        See Also
+        --------
+
+        matplotlib.Figure.get_size_inches
         """
 
         forward = kwargs.get('forward', False)
@@ -673,7 +683,21 @@ class Figure(Artist):
                 manager.resize(int(canvasw), int(canvash))
 
     def get_size_inches(self):
-        return self.bbox_inches.p1
+        """
+        Returns the current size of the figure in inches (1in == 2.54cm)
+        as an numpy array.
+
+        Returns
+        -------
+        size : ndarray
+           The size of the figure in inches
+
+        See Also
+        --------
+
+        matplotlib.Figure.set_size_inches
+        """
+        return np.array(self.bbox_inches.p1)
 
     def get_edgecolor(self):
         'Get the edge color of the Figure rectangle'
@@ -892,6 +916,9 @@ class Figure(Artist):
         *kwargs*) then it will simply make that subplot current and
         return it.
 
+        .. seealso:: :meth:`~matplotlib.pyplot.subplot` for an
+           explanation of the args.
+
         The following kwargs are supported:
 
         %(Axes)s
@@ -1023,8 +1050,8 @@ class Figure(Artist):
             ims = [(im.make_image(mag), im.ox, im.oy, im.get_alpha())
                    for im in self.images]
 
-            im = _image.from_images(self.bbox.height * mag,
-                                    self.bbox.width * mag,
+            im = _image.from_images(int(self.bbox.height * mag),
+                                    int(self.bbox.width * mag),
                                     ims)
 
             im.is_grayscale = False
@@ -1125,6 +1152,11 @@ class Figure(Artist):
           *markerscale*: [ *None* | scalar ]
             The relative size of legend markers vs. original. If *None*, use rc
             settings.
+
+          *markerfirst*: [ *True* | *False* ]
+            if *True*, legend marker is placed to the left of the legend label
+            if *False*, legend marker is placed to the right of the legend
+            label
 
           *fancybox*: [ *None* | *False* | *True* ]
             if *True*, draw a frame with a round fancybox.  If *None*, use rc
@@ -1641,7 +1673,7 @@ def figaspect(arg):
     determine the width and height for a figure that would fit array
     preserving aspect ratio.  The figure width, height in inches are
     returned.  Be sure to create an axes with equal with and height,
-    eg
+    e.g.,
 
     Example usage::
 

@@ -11,9 +11,10 @@ Module containing Axes3D, an object which can plot 3D objects on a
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+import math
 
 import six
-from six.moves import map, xrange, zip
+from six.moves import map, xrange, zip, reduce
 
 import warnings
 from operator import itemgetter
@@ -1532,12 +1533,17 @@ class Axes3D(Axes):
         but it also supports color mapping by supplying the *cmap*
         argument.
 
+        The `rstride` and `cstride` kwargs set the stride used to
+        sample the input data to generate the graph.  If 1k by 1k
+        arrays are passed in the default values for the strides will
+        result in a 100x100 grid being plotted.
+
         ============= ================================================
         Argument      Description
         ============= ================================================
         *X*, *Y*, *Z* Data values as 2D arrays
-        *rstride*     Array row stride (step size)
-        *cstride*     Array column stride (step size)
+        *rstride*     Array row stride (step size), defaults to 10
+        *cstride*     Array column stride (step size), defaults to 10
         *color*       Color of the surface patches
         *cmap*        A colormap for the surface patches.
         *facecolors*  Face colors for the individual patches
@@ -1675,11 +1681,13 @@ class Axes3D(Axes):
         '''
 
         shade = np.array([np.dot(n / proj3d.mod(n), [-1, -1, 0.5])
+                          if proj3d.mod(n) else np.nan
                           for n in normals])
         mask = ~np.isnan(shade)
 
         if len(shade[mask]) > 0:
             norm = Normalize(min(shade[mask]), max(shade[mask]))
+            shade[~mask] = min(shade[mask])
             color = colorConverter.to_rgba_array(color)
             # shape of color should be (M, 4) (where M is number of faces)
             # shape of shade should be (M,)
@@ -1701,13 +1709,16 @@ class Axes3D(Axes):
         '''
         Plot a 3D wireframe.
 
+        The `rstride` and `cstride` kwargs set the stride used to
+        sample the input data to generate the graph.
+
         ==========  ================================================
         Argument    Description
         ==========  ================================================
         *X*, *Y*,   Data values as 2D arrays
         *Z*
-        *rstride*   Array row stride (step size)
-        *cstride*   Array column stride (step size)
+        *rstride*   Array row stride (step size), defaults to 1
+        *cstride*   Array column stride (step size), defaults to 1
         ==========  ================================================
 
         Keyword arguments are passed on to
@@ -2165,31 +2176,36 @@ class Axes3D(Axes):
 
         Axes.add_collection(self, col)
 
-    def scatter(self, xs, ys, zs=0, zdir='z', s=20, c='b', *args, **kwargs):
+    def scatter(self, xs, ys, zs=0, zdir='z', s=20, c='b', depthshade=True,
+                *args, **kwargs):
         '''
         Create a scatter plot.
 
-        ==========  ==========================================================
-        Argument    Description
-        ==========  ==========================================================
-        *xs*, *ys*  Positions of data points.
-        *zs*        Either an array of the same length as *xs* and
-                    *ys* or a single value to place all points in
-                    the same plane. Default is 0.
-        *zdir*      Which direction to use as z ('x', 'y' or 'z')
-                    when plotting a 2D set.
-        *s*         size in points^2.  It is a scalar or an array of the same
-                    length as *x* and *y*.
+        ============  ========================================================
+        Argument      Description
+        ============  ========================================================
+        *xs*, *ys*    Positions of data points.
+        *zs*          Either an array of the same length as *xs* and
+                      *ys* or a single value to place all points in
+                      the same plane. Default is 0.
+        *zdir*        Which direction to use as z ('x', 'y' or 'z')
+                      when plotting a 2D set.
+        *s*           size in points^2.  It is a scalar or an array of the
+                      same length as *x* and *y*.
 
-        *c*         a color. *c* can be a single color format string, or a
-                    sequence of color specifications of length *N*, or a
-                    sequence of *N* numbers to be mapped to colors using the
-                    *cmap* and *norm* specified via kwargs (see below). Note
-                    that *c* should not be a single numeric RGB or RGBA
-                    sequence because that is indistinguishable from an array
-                    of values to be colormapped.  *c* can be a 2-D array in
-                    which the rows are RGB or RGBA, however.
-        ==========  ==========================================================
+        *c*           a color. *c* can be a single color format string, or a
+                      sequence of color specifications of length *N*, or a
+                      sequence of *N* numbers to be mapped to colors using the
+                      *cmap* and *norm* specified via kwargs (see below). Note
+                      that *c* should not be a single numeric RGB or RGBA
+                      sequence because that is indistinguishable from an array
+                      of values to be colormapped.  *c* can be a 2-D array in
+                      which the rows are RGB or RGBA, however.
+
+        *depthshade*
+                      Whether or not to shade the scatter markers to give
+                      the appearance of depth. Default is *True*.
+        ============  ========================================================
 
         Keyword arguments are passed on to
         :func:`~matplotlib.axes.Axes.scatter`.
@@ -2227,7 +2243,8 @@ class Axes3D(Axes):
             zs = np.ones(len(xs)) * zs
         else:
             is_2d = False
-        art3d.patch_collection_2d_to_3d(patches, zs=zs, zdir=zdir)
+        art3d.patch_collection_2d_to_3d(patches, zs=zs, zdir=zdir,
+                                        depthshade=depthshade)
 
         if self._zmargin < 0.05 and xs.size > 0:
             self.set_zmargin(0.05)
@@ -2410,6 +2427,170 @@ class Axes3D(Axes):
         self.title.set_y(0.92 * y)
         return ret
     set_title.__doc__ = maxes.Axes.set_title.__doc__
+
+    def quiver(self, *args, **kwargs):
+        """
+        Plot a 3D field of arrows.
+
+        call signatures::
+
+            quiver(X, Y, Z, U, V, W, **kwargs)
+
+        Arguments:
+
+            *X*, *Y*, *Z*:
+                The x, y and z coordinates of the arrow locations (default is
+                tip of arrow; see *pivot* kwarg)
+
+            *U*, *V*, *W*:
+                The x, y and z components of the arrow vectors
+
+        The arguments could be array-like or scalars, so long as they
+        they can be broadcast together. The arguments can also be
+        masked arrays. If an element in any of argument is masked, then
+        that corresponding quiver element will not be plotted.
+
+        Keyword arguments:
+
+            *length*: [1.0 | float]
+                The length of each quiver, default to 1.0, the unit is
+                the same with the axes
+
+            *arrow_length_ratio*: [0.3 | float]
+                The ratio of the arrow head with respect to the quiver,
+                default to 0.3
+
+            *pivot*: [ 'tail' | 'middle' | 'tip' ]
+                The part of the arrow that is at the grid point; the arrow
+                rotates about this point, hence the name *pivot*.
+
+        Any additional keyword arguments are delegated to
+        :class:`~matplotlib.collections.LineCollection`
+
+        """
+        def calc_arrow(uvw, angle=15):
+            """
+            To calculate the arrow head. uvw should be a unit vector.
+            """
+            # get unit direction vector perpendicular to (u,v,w)
+            norm = np.linalg.norm(uvw[:2])
+            if norm > 0:
+                x = uvw[1] / norm
+                y = -uvw[0] / norm
+            else:
+                x, y = 0, 1
+
+            # compute the two arrowhead direction unit vectors
+            ra = math.radians(angle)
+            c = math.cos(ra)
+            s = math.sin(ra)
+
+            # construct the rotation matrices
+            Rpos = np.array([[c+(x**2)*(1-c), x*y*(1-c), y*s],
+                             [y*x*(1-c), c+(y**2)*(1-c), -x*s],
+                             [-y*s, x*s, c]])
+            # opposite rotation negates everything but the diagonal
+            Rneg = Rpos * (np.eye(3)*2 - 1)
+
+            # multiply them to get the rotated vector
+            return Rpos.dot(uvw), Rneg.dot(uvw)
+
+        had_data = self.has_data()
+
+        # handle kwargs
+        # shaft length
+        length = kwargs.pop('length', 1)
+        # arrow length ratio to the shaft length
+        arrow_length_ratio = kwargs.pop('arrow_length_ratio', 0.3)
+        # pivot point
+        pivot = kwargs.pop('pivot', 'tip')
+
+        # handle args
+        argi = 6
+        if len(args) < argi:
+            ValueError('Wrong number of arguments. Expected %d got %d' %
+                       (argi, len(args)))
+
+        # first 6 arguments are X, Y, Z, U, V, W
+        input_args = args[:argi]
+        # if any of the args are scalar, convert into list
+        input_args = [[k] if isinstance(k, (int, float)) else k
+                      for k in input_args]
+
+        # extract the masks, if any
+        masks = [k.mask for k in input_args if isinstance(k, np.ma.MaskedArray)]
+        # broadcast to match the shape
+        bcast = np.broadcast_arrays(*(input_args + masks))
+        input_args = bcast[:argi]
+        masks = bcast[argi:]
+        if masks:
+            # combine the masks into one
+            mask = reduce(np.logical_or, masks)
+            # put mask on and compress
+            input_args = [np.ma.array(k, mask=mask).compressed()
+                          for k in input_args]
+        else:
+            input_args = [k.flatten() for k in input_args]
+
+        if any(len(v) == 0 for v in input_args):
+            # No quivers, so just make an empty collection and return early
+            linec = art3d.Line3DCollection([], *args[argi:], **kwargs)
+            self.add_collection(linec)
+            return linec
+
+        # Following assertions must be true before proceeding
+        # must all be ndarray
+        assert all(isinstance(k, np.ndarray) for k in input_args)
+        # must all in same shape
+        assert len(set([k.shape for k in input_args])) == 1
+
+        shaft_dt = np.linspace(0, length, num=2)
+        arrow_dt = shaft_dt * arrow_length_ratio
+
+        if pivot == 'tail':
+            shaft_dt -= length
+        elif pivot == 'middle':
+            shaft_dt -= length/2.
+        elif pivot != 'tip':
+            raise ValueError('Invalid pivot argument: ' + str(pivot))
+
+        XYZ = np.column_stack(input_args[:3])
+        UVW = np.column_stack(input_args[3:argi]).astype(float)
+
+        # Normalize rows of UVW
+        # Note: with numpy 1.9+, could use np.linalg.norm(UVW, axis=1)
+        norm = np.sqrt(np.sum(UVW**2, axis=1))
+
+        # If any row of UVW is all zeros, don't make a quiver for it
+        mask = norm > 1e-10
+        XYZ = XYZ[mask]
+        UVW = UVW[mask] / norm[mask].reshape((-1, 1))
+
+        if len(XYZ) > 0:
+            # compute the shaft lines all at once with an outer product
+            shafts = (XYZ - np.multiply.outer(shaft_dt, UVW)).swapaxes(0, 1)
+            # compute head direction vectors, n heads by 2 sides by 3 dimensions
+            head_dirs = np.array([calc_arrow(d) for d in UVW])
+            # compute all head lines at once, starting from where the shaft ends
+            heads = shafts[:, :1] - np.multiply.outer(arrow_dt, head_dirs)
+            # stack left and right head lines together
+            heads.shape = (len(arrow_dt), -1, 3)
+            # transpose to get a list of lines
+            heads = heads.swapaxes(0, 1)
+
+            lines = list(shafts) + list(heads)
+        else:
+            lines = []
+
+        linec = art3d.Line3DCollection(lines, *args[argi:], **kwargs)
+        self.add_collection(linec)
+
+        self.auto_scale_xyz(XYZ[:, 0], XYZ[:, 1], XYZ[:, 2], had_data)
+
+        return linec
+
+    quiver3D = quiver
+
 
 def get_test_data(delta=0.05):
     '''

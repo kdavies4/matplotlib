@@ -25,7 +25,10 @@ from __future__ import print_function
 import wxversion
 wxversion.ensureMinimal('2.8')
 
-import sys, time, os, gc
+import sys
+import time
+import os
+import gc
 import matplotlib
 matplotlib.use('WXAgg')
 import matplotlib.cm as cm
@@ -37,26 +40,26 @@ import numpy as np
 import wx
 import wx.xrc as xrc
 
-ERR_TOL = 1e-5 # floating point slop for peak-detection
+ERR_TOL = 1e-5  # floating point slop for peak-detection
 
 
 matplotlib.rc('image', origin='lower')
 
-class PlotPanel(wx.Panel):
 
+class PlotPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
 
-        self.fig = Figure((5,4), 75)
+        self.fig = Figure((5, 4), 75)
         self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
-        self.toolbar = Toolbar(self.canvas) #matplotlib toolbar
+        self.toolbar = Toolbar(self.canvas)  # matplotlib toolbar
         self.toolbar.Realize()
         #self.toolbar.set_active([0,1])
 
         # Now put all into a sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         # This way of adding to sizer allows resizing
-        sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.GROW)
+        sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         # Best to allow the toolbar to resize!
         sizer.Add(self.toolbar, 0, wx.GROW)
         self.SetSizer(sizer)
@@ -69,22 +72,22 @@ class PlotPanel(wx.Panel):
         y = np.arange(100.0)*2*np.pi/50.0
         self.x, self.y = np.meshgrid(x, y)
         z = np.sin(self.x) + np.cos(self.y)
-        self.im = a.imshow( z, cmap=cm.jet)#, interpolation='nearest')
+        self.im = a.imshow(z, cmap=cm.jet)  # , interpolation='nearest')
 
         zmax = np.amax(z) - ERR_TOL
         ymax_i, xmax_i = np.nonzero(z >= zmax)
         if self.im.origin == 'upper':
-            ymax_i = z.shape[0]-ymax_i
-        self.lines = a.plot(xmax_i,ymax_i,'ko')
+            ymax_i = z.shape[0] - ymax_i
+        self.lines = a.plot(xmax_i, ymax_i, 'ko')
 
-        self.toolbar.update() # Not sure why this is needed - ADS
+        self.toolbar.update()  # Not sure why this is needed - ADS
 
     def GetToolBar(self):
         # You will need to override GetToolBar if you are using an
         # unmanaged toolbar in your frame
         return self.toolbar
 
-    def OnWhiz(self,evt):
+    def OnWhiz(self, evt):
         self.x += np.pi/15
         self.y += np.pi/20
         z = np.sin(self.x) + np.cos(self.y)
@@ -93,14 +96,15 @@ class PlotPanel(wx.Panel):
         zmax = np.amax(z) - ERR_TOL
         ymax_i, xmax_i = np.nonzero(z >= zmax)
         if self.im.origin == 'upper':
-            ymax_i = z.shape[0]-ymax_i
-        self.lines[0].set_data(xmax_i,ymax_i)
+            ymax_i = z.shape[0] - ymax_i
+        self.lines[0].set_data(xmax_i, ymax_i)
 
         self.canvas.draw()
 
     def onEraseBackground(self, evt):
         # this is supposed to prevent redraw flicker on some X servers...
         pass
+
 
 class MyApp(wx.App):
     def OnInit(self):
@@ -111,14 +115,14 @@ class MyApp(wx.App):
 
         # main frame and panel ---------
 
-        self.frame = self.res.LoadFrame(None,"MainFrame")
-        self.panel = xrc.XRCCTRL(self.frame,"MainPanel")
+        self.frame = self.res.LoadFrame(None, "MainFrame")
+        self.panel = xrc.XRCCTRL(self.frame, "MainPanel")
 
         # matplotlib panel -------------
 
         # container for matplotlib panel (I like to make a container
         # panel for our panel so I know where it'll go when in XRCed.)
-        plot_container = xrc.XRCCTRL(self.frame,"plot_container_panel")
+        plot_container = xrc.XRCCTRL(self.frame, "plot_container_panel")
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # matplotlib panel itself
@@ -131,13 +135,13 @@ class MyApp(wx.App):
 
         # whiz button ------------------
 
-        whiz_button = xrc.XRCCTRL(self.frame,"whiz_button")
+        whiz_button = xrc.XRCCTRL(self.frame, "whiz_button")
         wx.EVT_BUTTON(whiz_button, whiz_button.GetId(),
                       self.plotpanel.OnWhiz)
 
         # bang button ------------------
 
-        bang_button = xrc.XRCCTRL(self.frame,"bang_button")
+        bang_button = xrc.XRCCTRL(self.frame, "bang_button")
         wx.EVT_BUTTON(bang_button, bang_button.GetId(),
                       self.OnBang)
 
@@ -150,13 +154,12 @@ class MyApp(wx.App):
 
         return True
 
-    def OnBang(self,event):
-        bang_count = xrc.XRCCTRL(self.frame,"bang_count")
+    def OnBang(self, event):
+        bang_count = xrc.XRCCTRL(self.frame, "bang_count")
         bangs = bang_count.GetValue()
-        bangs = int(bangs)+1
+        bangs = int(bangs) + 1
         bang_count.SetValue(str(bangs))
 
 if __name__ == '__main__':
     app = MyApp(0)
     app.MainLoop()
-

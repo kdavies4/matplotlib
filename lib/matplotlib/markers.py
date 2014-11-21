@@ -45,6 +45,8 @@ None                           nothing
 ""                             nothing
 ``'$...$'``                    render the string using mathtext.
 `verts`                        a list of (x, y) pairs used for Path vertices.
+                               The center of the marker is located at (0,0) and
+                               the size is normalized.
 path                           a `~matplotlib.path.Path` instance.
 (`numsides`, `style`, `angle`) see below
 ============================== ===============================================
@@ -269,7 +271,7 @@ class MarkerStyle(object):
         verts = path.vertices
         rescale = max(np.max(np.abs(verts[:, 0])),
                       np.max(np.abs(verts[:, 1])))
-        self._transform = Affine2D().scale(1.0 / rescale)
+        self._transform = Affine2D().scale(0.5 / rescale)
         self._path = path
 
     def _set_path_marker(self):
@@ -725,7 +727,7 @@ class MarkerStyle(object):
         self._path = self._tri_path
 
     def _set_tri_up(self):
-        self._transform = Affine2D().scale(0.5).rotate_deg(90)
+        self._transform = Affine2D().scale(0.5).rotate_deg(180)
         self._snap_threshold = 5.0
         self._filled = False
         self._path = self._tri_path
@@ -737,7 +739,7 @@ class MarkerStyle(object):
         self._path = self._tri_path
 
     def _set_tri_right(self):
-        self._transform = Affine2D().scale(0.5).rotate_deg(180)
+        self._transform = Affine2D().scale(0.5).rotate_deg(90)
         self._snap_threshold = 5.0
         self._filled = False
         self._path = self._tri_path

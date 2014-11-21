@@ -22,11 +22,13 @@ from numpy.random import rand
 
 import wx
 
+
 class MyNavigationToolbar(NavigationToolbar2WxAgg):
     """
     Extend the default wx toolbar with your own event handlers
     """
     ON_CUSTOM = wx.NewId()
+
     def __init__(self, canvas, cankill):
         NavigationToolbar2WxAgg.__init__(self, canvas)
 
@@ -44,7 +46,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         ax = self.canvas.figure.axes[0]
 
         # generate a random location can color
-        x,y = tuple(rand(2))
+        x, y = tuple(rand(2))
         rgb = tuple(rand(3))
 
         # add the text and draw
@@ -56,19 +58,18 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
 
 
 class CanvasFrame(wx.Frame):
-
     def __init__(self):
-        wx.Frame.__init__(self,None,-1,
-                         'CanvasFrame',size=(550,350))
+        wx.Frame.__init__(self, None, -1,
+                          'CanvasFrame', size=(550, 350))
 
         self.SetBackgroundColour(wx.NamedColour("WHITE"))
 
-        self.figure = Figure(figsize=(5,4), dpi=100)
+        self.figure = Figure(figsize=(5, 4), dpi=100)
         self.axes = self.figure.add_subplot(111)
-        t = arange(0.0,3.0,0.01)
+        t = arange(0.0, 3.0, 0.01)
         s = sin(2*pi*t)
 
-        self.axes.plot(t,s)
+        self.axes.plot(t, s)
 
         self.canvas = FigureCanvas(self, -1, self.figure)
 
@@ -100,13 +101,12 @@ class CanvasFrame(wx.Frame):
         self.SetSizer(self.sizer)
         self.Fit()
 
-
     def OnPaint(self, event):
         self.canvas.draw()
         event.Skip()
 
-class App(wx.App):
 
+class App(wx.App):
     def OnInit(self):
         'Create the main window and insert the custom frame'
         frame = CanvasFrame()

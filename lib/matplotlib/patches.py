@@ -858,21 +858,64 @@ class Polygon(Patch):
         self.set_xy(xy)
 
     def get_path(self):
+        """
+        Get the path of the polygon
+
+        Returns
+        -------
+        path : Path
+           The :class:`~matplotlib.path.Path` object for
+           the polygon
+        """
         return self._path
 
     def get_closed(self):
+        """
+        Returns if the polygon is closed
+
+        Returns
+        -------
+        closed : bool
+            If the path is closed
+        """
         return self._closed
 
     def set_closed(self, closed):
+        """
+        Set if the polygon is closed
+
+        Parameters
+        ----------
+        closed : bool
+           True if the polygon is closed
+        """
         if self._closed == bool(closed):
             return
         self._closed = bool(closed)
         self.set_xy(self.get_xy())
 
     def get_xy(self):
+        """
+        Get the vertices of the path
+
+        Returns
+        -------
+        vertices : numpy array
+            The coordinates of the vertices as a Nx2
+            ndarray.
+        """
         return self._path.vertices
 
     def set_xy(self, xy):
+        """
+        Set the vertices of the polygon
+
+        Parameters
+        ----------
+        xy : numpy array or iterable of pairs
+            The coordinates of the vertices as a Nx2
+            ndarray or iterable of pairs.
+        """
         xy = np.asarray(xy)
         if self._closed:
             if len(xy) and (xy[0] != xy[-1]).any():
@@ -955,7 +998,7 @@ class Wedge(Patch):
 
     def set_radius(self, radius):
         self._path = None
-        self.radius = radius
+        self.r = radius
 
     def set_theta1(self, theta1):
         self._path = None
@@ -1959,6 +2002,57 @@ class BoxStyle(_Style):
             return p
 
     _style_list["rarrow"] = RArrow
+
+    class DArrow(_Base):
+        """
+        (Double) Arrow Box
+        """
+        # This source is copied from LArrow,
+        # modified to add a right arrow to the bbox.
+
+        def __init__(self, pad=0.3):
+            self.pad = pad
+            super(BoxStyle.DArrow, self).__init__()
+
+        def transmute(self, x0, y0, width, height, mutation_size):
+
+            # padding
+            pad = mutation_size * self.pad
+
+            # width and height with padding added.
+            # The width is padded by the arrows, so we don't need to pad it.
+            height = height + 2. * pad
+
+            # boundary of the padded box
+            x0, y0 = x0 - pad, y0 - pad
+            x1, y1 = x0 + width, y0 + height
+
+            dx = (y1 - y0)/2.
+            dxx = dx * .5
+            # adjust x0.  1.4 <- sqrt(2)
+            x0 = x0 + pad / 1.4
+
+            cp = [(x0 + dxx, y0), (x1, y0),  # bot-segment
+                  (x1, y0 - dxx), (x1 + dx + dxx, y0 + dx),
+                  (x1, y1 + dxx),  # right-arrow
+                  (x1, y1), (x0 + dxx, y1),  # top-segment
+                  (x0 + dxx, y1 + dxx), (x0 - dx, y0 + dx),
+                  (x0 + dxx, y0 - dxx),  # left-arrow
+                  (x0 + dxx, y0), (x0 + dxx, y0)]  # close-poly
+
+            com = [Path.MOVETO, Path.LINETO,
+                   Path.LINETO, Path.LINETO,
+                   Path.LINETO,
+                   Path.LINETO, Path.LINETO,
+                   Path.LINETO, Path.LINETO,
+                   Path.LINETO,
+                   Path.LINETO, Path.CLOSEPOLY]
+
+            path = Path(cp, com)
+
+            return path
+
+    _style_list['darrow'] = DArrow
 
     class Round(_Base):
         """

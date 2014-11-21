@@ -34,6 +34,7 @@ extensions = ['matplotlib.sphinxext.mathmpl', 'sphinxext.math_symbol_table',
               'sphinxext.github',
               'numpydoc']
 
+exclude_patterns = ['api/api_changes/*', 'users/whats_new/*']
 
 # Use IPython's console highlighting by default
 try:
@@ -69,7 +70,7 @@ master_doc = 'contents'
 
 # General substitutions.
 project = 'Matplotlib'
-copyright = '2002 - 2012 John Hunter, Darren Dale, Eric Firing, Michael Droettboom and the matplotlib development team; 2012 - 2013 The matplotlib development team'
+copyright = '2002 - 2012 John Hunter, Darren Dale, Eric Firing, Michael Droettboom and the matplotlib development team; 2012 - 2014 The matplotlib development team'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
@@ -221,9 +222,9 @@ latex_font_size = '11pt'
 # (source start file, target name, title, author, document class [howto/manual]).
 
 latex_documents = [
-  ('contents', 'Matplotlib.tex', 'Matplotlib',
-   'John Hunter, Darren Dale, Eric Firing, Michael Droettboom and the '
-   'matplotlib development team', 'manual'),
+    ('contents', 'Matplotlib.tex', 'Matplotlib',
+     'John Hunter, Darren Dale, Eric Firing, Michael Droettboom and the '
+     'matplotlib development team', 'manual'),
 ]
 
 
@@ -232,7 +233,7 @@ latex_documents = [
 latex_logo = None
 
 # Additional stuff for the LaTeX preamble.
-latex_preamble =r"""
+latex_preamble = r"""
    % In the parameters section, place a newline after the Parameters
    % header.  (This is stolen directly from Numpy's conf.py, since it
    % affects Numpy-style docstrings).
@@ -270,13 +271,60 @@ rst_epilog = """
 """ % matplotlib.__version__numpy__
 
 texinfo_documents = [
-  ("contents", 'matplotlib', 'Matplotlib Documentation',
-   'John Hunter@*Darren Dale@*Eric Firing@*Michael Droettboom@*'
-   'The matplotlib development team',
-   'Matplotlib', "Python plotting package", 'Programming',
-   1),
+    ("contents", 'matplotlib', 'Matplotlib Documentation',
+     'John Hunter@*Darren Dale@*Eric Firing@*Michael Droettboom@*'
+     'The matplotlib development team',
+     'Matplotlib', "Python plotting package", 'Programming',
+     1),
 ]
 
+try:
+    from unittest.mock import MagicMock
+except:
+    from mock import MagicMock
+
+
+class MyWX(MagicMock):
+    class Panel(object):
+        pass
+
+    class ToolBar(object):
+        pass
+
+    class Frame(object):
+        pass
+
+    VERSION_STRING = '2.8'
+
+
+class MyPyQt4(MagicMock):
+    class QtGui(object):
+        class QToolBar(object):
+            pass
+
+        class QDialog(object):
+            pass
+
+        class QWidget(object):
+            pass
+
+        class QMainWindow(object):
+            pass
+
+
+class MySip(MagicMock):
+    def getapi(*args):
+        return 1
+
+
+mockwxversion = MagicMock()
+mockwx = MyWX()
+mocksip = MySip()
+mockpyqt4 = MyPyQt4()
+sys.modules['wxversion'] = mockwxversion
+sys.modules['wx'] = mockwx
+sys.modules['sip'] = mocksip
+sys.modules['PyQt4'] = mockpyqt4
 
 ################# numpydoc config ####################
 numpydoc_show_class_members = False

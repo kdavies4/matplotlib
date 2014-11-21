@@ -8,6 +8,7 @@ import six
 
 import numpy as np
 from numpy.testing import assert_array_equal
+from numpy.testing import assert_equal
 from numpy.testing import assert_almost_equal
 
 from matplotlib.patches import Polygon
@@ -200,6 +201,52 @@ def test_patch_custom_linestyle():
 
     ax.set_xlim([-1, 2])
     ax.set_ylim([-1, 2])
+
+
+def test_wedge_movement():
+    param_dict = {'center': ((0, 0), (1, 1), 'set_center'),
+                  'r': (5, 8, 'set_radius'),
+                  'width': (2, 3, 'set_width'),
+                  'theta1': (0, 30, 'set_theta1'),
+                  'theta2': (45, 50, 'set_theta2')}
+
+    init_args = dict((k, v[0]) for (k, v) in six.iteritems(param_dict))
+
+    w = mpatches.Wedge(**init_args)
+    for attr, (old_v, new_v, func) in six.iteritems(param_dict):
+        assert_equal(getattr(w, attr), old_v)
+        getattr(w, func)(new_v)
+        assert_equal(getattr(w, attr), new_v)
+
+
+@image_comparison(baseline_images=['wedge_range'],
+                  remove_text=True)
+def test_wedge_range():
+    ax = plt.axes()
+
+    t1 = 2.313869244286224
+
+    args = [[52.31386924, 232.31386924],
+            [52.313869244286224, 232.31386924428622],
+            [t1, t1 + 180.0],
+            [0, 360],
+            [90, 90 + 360],
+            [-180, 180],
+            [0, 380],
+            [45, 46],
+            [46, 45]]
+
+    for i, (theta1, theta2) in enumerate(args):
+        x = i % 3
+        y = i // 3
+
+        wedge = mpatches.Wedge((x * 3, y * 3), 1, theta1, theta2,
+                               facecolor='none', edgecolor='k', lw=3)
+
+        ax.add_artist(wedge)
+
+    ax.set_xlim([-2, 8])
+    ax.set_ylim([-2, 9])
 
 
 if __name__ == '__main__':

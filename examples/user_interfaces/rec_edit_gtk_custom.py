@@ -12,7 +12,7 @@ import mpl_toolkits.gtktools as gtktools
 
 
 datafile = cbook.get_sample_data('demodata.csv', asfileobj=False)
-r = mlab.csv2rec(datafile, converterd={'weekdays':str})
+r = mlab.csv2rec(datafile, converterd={'weekdays': str})
 
 
 formatd = mlab.get_formatd(r)
@@ -28,8 +28,9 @@ constant = ['clientid']   # block editing of this field
 liststore = gtktools.RecListStore(r, formatd=formatd, stringd=stringd)
 treeview = gtktools.RecTreeView(liststore, constant=constant)
 
+
 def mycallback(liststore, rownum, colname, oldval, newval):
-    print('verify: old=%s, new=%s, rec=%s'%(oldval, newval, liststore.r[rownum][colname]))
+    print('verify: old=%s, new=%s, rec=%s' % (oldval, newval, liststore.r[rownum][colname]))
 
 liststore.callbacks.connect('cell_changed', mycallback)
 

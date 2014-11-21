@@ -59,7 +59,6 @@ never used.
 """
 
 
-
 cdict1 = {'red':   ((0.0, 0.0, 0.0),
                    (0.5, 0.0, 0.1),
                    (1.0, 1.0, 1.0)),
@@ -85,21 +84,21 @@ cdict2 = {'red':   ((0.0, 0.0, 0.0),
         }
 
 cdict3 = {'red':  ((0.0, 0.0, 0.0),
-                   (0.25,0.0, 0.0),
+                   (0.25, 0.0, 0.0),
                    (0.5, 0.8, 1.0),
-                   (0.75,1.0, 1.0),
+                   (0.75, 1.0, 1.0),
                    (1.0, 0.4, 1.0)),
 
          'green': ((0.0, 0.0, 0.0),
-                   (0.25,0.0, 0.0),
+                   (0.25, 0.0, 0.0),
                    (0.5, 0.9, 0.9),
-                   (0.75,0.0, 0.0),
+                   (0.75, 0.0, 0.0),
                    (1.0, 0.0, 0.0)),
 
          'blue':  ((0.0, 0.0, 0.4),
-                   (0.25,1.0, 1.0),
+                   (0.25, 1.0, 1.0),
                    (0.5, 1.0, 0.8),
-                   (0.75,0.0, 0.0),
+                   (0.75, 0.0, 0.0),
                    (1.0, 0.0, 0.0))
         }
 
@@ -130,28 +129,28 @@ plt.register_cmap(cmap=blue_red2)
 # Third, for LinearSegmentedColormap only,
 # leave everything to register_cmap:
 
-plt.register_cmap(name='BlueRed3', data=cdict3) # optional lut kwarg
+plt.register_cmap(name='BlueRed3', data=cdict3)  # optional lut kwarg
 plt.register_cmap(name='BlueRedAlpha', data=cdict4)
 
 # Make some illustrative fake data:
 
 x = np.arange(0, np.pi, 0.1)
 y = np.arange(0, 2*np.pi, 0.1)
-X, Y = np.meshgrid(x,y)
+X, Y = np.meshgrid(x, y)
 Z = np.cos(X) * np.sin(Y) * 10
 
 # Make the figure:
 
-plt.figure(figsize=(6,9))
+plt.figure(figsize=(6, 9))
 plt.subplots_adjust(left=0.02, bottom=0.06, right=0.95, top=0.94, wspace=0.05)
 
 # Make 4 subplots:
 
-plt.subplot(2,2,1)
+plt.subplot(2, 2, 1)
 plt.imshow(Z, interpolation='nearest', cmap=blue_red1)
 plt.colorbar()
 
-plt.subplot(2,2,2)
+plt.subplot(2, 2, 2)
 cmap = plt.get_cmap('BlueRed2')
 plt.imshow(Z, interpolation='nearest', cmap=cmap)
 plt.colorbar()
@@ -162,7 +161,7 @@ plt.colorbar()
 
 plt.rcParams['image.cmap'] = 'BlueRed3'
 
-plt.subplot(2,2,3)
+plt.subplot(2, 2, 3)
 plt.imshow(Z, interpolation='nearest')
 plt.colorbar()
 plt.title("Alpha = 1")
@@ -174,7 +173,7 @@ plt.title("Alpha = 1")
 # image-like item plotted via pyplot, if any.
 #
 
-plt.subplot(2,2,4)
+plt.subplot(2, 2, 4)
 # Draw a line with low zorder so it will be behind the image.
 plt.plot([0, 10*np.pi], [0, 20*np.pi], color='c', lw=20, zorder=-1)
 
@@ -190,4 +189,3 @@ plt.title("Varying alpha")
 plt.suptitle('Custom Blue-Red colormaps', fontsize=16)
 
 plt.show()
-

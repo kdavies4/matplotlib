@@ -1,8 +1,10 @@
+"""
+Copy of fill_between.py but using fill_betweenx() instead.
+"""
 import matplotlib.mlab as mlab
 from matplotlib.pyplot import figure, show
 import numpy as np
 
-## Copy of fill_between.py but using fill_betweenx() instead.
 
 x = np.arange(0.0, 2, 0.01)
 y1 = np.sin(2*np.pi*x)
@@ -30,16 +32,16 @@ ax3.set_xlabel('x')
 fig = figure()
 ax = fig.add_subplot(211)
 ax.plot(y1, x, y2, x, color='black')
-ax.fill_betweenx(x, y1, y2, where=y2>=y1, facecolor='green')
-ax.fill_betweenx(x, y1, y2, where=y2<=y1, facecolor='red')
+ax.fill_betweenx(x, y1, y2, where=y2 >= y1, facecolor='green')
+ax.fill_betweenx(x, y1, y2, where=y2 <= y1, facecolor='red')
 ax.set_title('fill between where')
 
 # Test support for masked arrays.
 y2 = np.ma.masked_greater(y2, 1.0)
 ax1 = fig.add_subplot(212, sharex=ax)
 ax1.plot(y1, x, y2, x, color='black')
-ax1.fill_betweenx(x, y1, y2, where=y2>=y1, facecolor='green')
-ax1.fill_betweenx(x, y1, y2, where=y2<=y1, facecolor='red')
+ax1.fill_betweenx(x, y1, y2, where=y2 >= y1, facecolor='green')
+ax1.fill_betweenx(x, y1, y2, where=y2 <= y1, facecolor='red')
 ax1.set_title('Now regions with y2 > 1 are masked')
 
 # This example illustrates a problem; because of the data

@@ -3,8 +3,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 from six.moves import xrange
-if six.PY3:
-    unichr = chr
+from six import unichr
 
 import os, base64, tempfile, gzip, io, sys, codecs, re
 
@@ -93,7 +92,7 @@ def escape_attrib(s):
 # @param file A file or file-like object.  This object must implement
 #    a <b>write</b> method that takes an 8-bit string.
 
-class XMLWriter:
+class XMLWriter(object):
     def __init__(self, file):
         self.__write = file.write
         if hasattr(file, "flush"):
@@ -608,6 +607,23 @@ class RendererSVG(RendererBase):
                              offsets, offsetTrans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
                              offset_position):
+        # Is the optimization worth it? Rough calculation:
+        # cost of emitting a path in-line is
+        #    (len_path + 5) * uses_per_path
+        # cost of definition+use is
+        #    (len_path + 3) + 9 * uses_per_path
+        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
+        uses_per_path = self._iter_collection_uses_per_path(
+            paths, all_transforms, offsets, facecolors, edgecolors)
+        should_do_optimization = \
+            len_path + 9 * uses_per_path + 3 < (len_path + 5) * uses_per_path
+        if not should_do_optimization:
+            return RendererBase.draw_path_collection(
+                self, gc, master_transform, paths, all_transforms,
+                offsets, offsetTrans, facecolors, edgecolors,
+                linewidths, linestyles, antialiaseds, urls,
+                offset_position)
+
         writer = self.writer
         path_codes = []
         writer.start('defs')
@@ -801,10 +817,7 @@ class RendererSVG(RendererBase):
             self.writer.start('a', attrib={'xlink:href': url})
         if rcParams['svg.image_inline']:
             bytesio = io.BytesIO()
-            im.flipud_out()
-            rows, cols, buffer = im.as_rgba_str()
-            _png.write_png(buffer, cols, rows, bytesio)
-            im.flipud_out()
+            _png.write_png(np.array(im)[::-1], bytesio)
             oid = oid or self._make_id('image', bytesio)
             attrib['xlink:href'] = (
                 "data:image/png;base64,\n" +
@@ -813,10 +826,7 @@ class RendererSVG(RendererBase):
             self._imaged[self.basename] = self._imaged.get(self.basename,0) + 1
             filename = '%s.image%d.png'%(self.basename, self._imaged[self.basename])
             verbose.report( 'Writing image file for inclusion: %s' % filename)
-            im.flipud_out()
-            rows, cols, buffer = im.as_rgba_str()
-            _png.write_png(buffer, cols, rows, filename)
-            im.flipud_out()
+            _png.write_png(np.array(im)[::-1], filename)
             oid = oid or 'Im_' + self._make_id('image', filename)
             attrib['xlink:href'] = filename
 
@@ -1005,7 +1015,7 @@ class RendererSVG(RendererBase):
             style['font-style'] = prop.get_style().lower()
             attrib['style'] = generate_css(style)
 
-            if angle == 0 or mtext.get_rotation_mode() == "anchor":
+            if mtext and (angle == 0 or mtext.get_rotation_mode() == "anchor"):
                 # If text anchoring can be supported, get the original
                 # coordinates and add alignment information.
 

@@ -33,10 +33,11 @@ Z[interior] = np.ma.masked
 # this is usually not such a good idea, because they don't
 # occur on nice boundaries, but we do it here for purposes
 # of illustration.
-CS = plt.contourf(X, Y, Z, 10, # [-1, -0.1, 0, 0.1],
-                        #alpha=0.5,
-                        cmap=plt.cm.bone,
-                        origin=origin)
+CS = plt.contourf(X, Y, Z, 10,
+                  #[-1, -0.1, 0, 0.1],
+                  #alpha=0.5,
+                  cmap=plt.cm.bone,
+                  origin=origin)
 
 # Note that in the following, we explicitly pass in a subset of
 # the contour levels used for the filled contours.  Alternatively,
@@ -44,9 +45,9 @@ CS = plt.contourf(X, Y, Z, 10, # [-1, -0.1, 0, 0.1],
 # or leave out the levels kwarg to use all of the original levels.
 
 CS2 = plt.contour(CS, levels=CS.levels[::2],
-                        colors = 'r',
-                        origin=origin,
-                        hold='on')
+                  colors='r',
+                  origin=origin,
+                  hold='on')
 
 plt.title('Nonsense (3 masked regions)')
 plt.xlabel('word length anomaly')
@@ -65,9 +66,9 @@ plt.figure()
 # of colors.
 levels = [-1.5, -1, -0.5, 0, 0.5, 1]
 CS3 = plt.contourf(X, Y, Z, levels,
-                        colors = ('r', 'g', 'b'),
-                        origin=origin,
-                        extend='both')
+                   colors=('r', 'g', 'b'),
+                   origin=origin,
+                   extend='both')
 # Our data range extends outside the range of levels; make
 # data below the lowest contour level yellow, and above the
 # highest level cyan:
@@ -75,11 +76,11 @@ CS3.cmap.set_under('yellow')
 CS3.cmap.set_over('cyan')
 
 CS4 = plt.contour(X, Y, Z, levels,
-                       colors = ('k',),
-                       linewidths = (3,),
-                       origin = origin)
+                  colors=('k',),
+                  linewidths = (3,),
+                  origin = origin)
 plt.title('Listed colors (3 masked regions)')
-plt.clabel(CS4, fmt = '%2.1f', colors = 'w', fontsize=14)
+plt.clabel(CS4, fmt='%2.1f', colors='w', fontsize=14)
 
 # Notice that the colorbar command gets all the information it
 # needs from the ContourSet object, CS3.
@@ -96,7 +97,7 @@ cmap.set_over("yellow")
 # no effect:
 #cmap.set_bad("red")
 
-fig, axs = plt.subplots(2,2)
+fig, axs = plt.subplots(2, 2)
 for ax, extend in zip(axs.ravel(), extends):
     cs = ax.contourf(X, Y, Z, levels, cmap=cmap, extend=extend, origin=origin)
     fig.colorbar(cs, ax=ax, shrink=0.9)
@@ -104,4 +105,3 @@ for ax, extend in zip(axs.ravel(), extends):
     ax.locator_params(nbins=4)
 
 plt.show()
-

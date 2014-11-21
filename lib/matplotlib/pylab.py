@@ -23,6 +23,7 @@ _Plotting commands
   broken_barh - a set of horizontal bars with gaps
   box       - set the axes frame on/off state
   boxplot   - make a box and whisker plot
+  violinplot - make a violin plot
   cla       - clear current axes
   clabel    - label a contour plot
   clf       - clear a figure window
@@ -156,15 +157,14 @@ _Matrix commands
 
 _Probability
 
-  levypdf   - The levy probability density function from the char. func.
   normpdf   - The Gaussian probability density function
   rand      - random numbers from the uniform distribution
   randn     - random numbers from the normal distribution
 
 _Statistics
 
-  amax       - the maximum along dimension m
-  amin       - the minimum along dimension m
+  amax      - the maximum along dimension m
+  amin      - the minimum along dimension m
   corrcoef  - correlation coefficient
   cov       - covariance matrix
   mean      - the mean along dimension m
@@ -173,7 +173,8 @@ _Statistics
   prod      - the product along dimension m
   ptp       - the max-min along dimension m
   std       - the standard deviation along dimension m
-  asum       - the sum along dimension m
+  asum      - the sum along dimension m
+  ksdensity - the kernel density estimate
 
 _Time series analysis
 
@@ -251,7 +252,7 @@ from matplotlib.mlab import griddata, stineman_interp, slopes, \
     is_closed_polygon, path_length, distances_along_curve, vector_lengths
 
 from matplotlib.mlab import window_hanning, window_none,  detrend, demean, \
-     detrend_mean, detrend_none, detrend_linear, entropy, normpdf, levypdf, \
+     detrend_mean, detrend_none, detrend_linear, entropy, normpdf, \
      find, longest_contiguous_ones, longest_ones, prepca, \
      prctile, prctile_rank, \
      center_matrix, rk4, bivariate_normal, get_xyz_where, \

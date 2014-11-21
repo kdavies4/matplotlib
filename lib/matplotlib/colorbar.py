@@ -653,12 +653,14 @@ class ColorbarBase(cm.ScalarMappable):
             self._values = v
             return
         else:
-            self.norm.vmin, self.norm.vmax = mtrans.nonsingular(self.norm.vmin,
-                                                                self.norm.vmax,
-                                                                expander=0.1)
             if not self.norm.scaled():
                 self.norm.vmin = 0
                 self.norm.vmax = 1
+
+            self.norm.vmin, self.norm.vmax = mtrans.nonsingular(self.norm.vmin,
+                                                                self.norm.vmax,
+                                                                expander=0.1)
+
             b = self.norm.inverse(self._uniform_y(self.cmap.N + 1))
             if self._extend_lower():
                 b[0] = b[0] - 1
@@ -840,6 +842,14 @@ class ColorbarBase(cm.ScalarMappable):
     def set_alpha(self, alpha):
         self.alpha = alpha
 
+    def remove(self):
+        """
+        Remove this colorbar from the figure
+        """
+
+        fig = self.ax.figure
+        fig.delaxes(self.ax)
+
 
 class Colorbar(ColorbarBase):
     """
@@ -967,6 +977,33 @@ class Colorbar(ColorbarBase):
         # be recalculating everything if there was a simple alpha
         # change.
 
+    def remove(self):
+        """
+        Remove this colorbar from the figure.  If the colorbar was created with
+        ``use_gridspec=True`` then restore the gridspec to its previous value.
+        """
+
+        ColorbarBase.remove(self)
+        self.mappable.callbacksSM.disconnect(self.mappable.colorbar_cid)
+        self.mappable.colorbar = None
+        self.mappable.colorbar_cid = None
+
+        try:
+            ax = self.mappable.axes
+        except AttributeError:
+            return
+
+        try:
+            gs = ax.get_subplotspec().get_gridspec()
+            subplotspec = gs.get_topmost_subplotspec()
+        except AttributeError:
+            # use_gridspec was False
+            pos = ax.get_position(original=True)
+            ax.set_position(pos)
+        else:
+            # use_gridspec was True
+            ax.set_subplotspec(subplotspec)
+
 
 @docstring.Substitution(make_axes_kw_doc)
 def make_axes(parents, location=None, orientation=None, fraction=0.15,
@@ -979,12 +1016,12 @@ def make_axes(parents, location=None, orientation=None, fraction=0.15,
 
     Keyword arguments may include the following (with defaults):
 
-        location : [`None`|'left'|'right'|'top'|'bottom']
+        location : [None|'left'|'right'|'top'|'bottom']
             The position, relative to **parents**, where the colorbar axes
             should be created. If None, the value will either come from the
             given ``orientation``, else it will default to 'right'.
 
-        orientation :  [`None`|'vertical'|'horizontal']
+        orientation :  [None|'vertical'|'horizontal']
             The orientation of the colorbar. Typically, this keyword shouldn't
             be used, as it can be derived from the ``location`` keyword.
 
@@ -1280,7 +1317,8 @@ def colorbar_factory(cax, mappable, **kwargs):
     else:
         cb = Colorbar(cax, mappable, **kwargs)
 
-    mappable.callbacksSM.connect('changed', cb.on_mappable_changed)
+    cid = mappable.callbacksSM.connect('changed', cb.on_mappable_changed)
     mappable.colorbar = cb
+    mappable.colorbar_cid = cid
 
     return cb

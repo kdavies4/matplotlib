@@ -9,13 +9,33 @@ locating and formatting.  Generic tick locators and formatters are provided,
 as well as domain specific custom ones..
 
 
+Default Formatter
+-----------------
+
+The default formatter identifies when the x-data being
+plotted is a small range on top of a large off set.  To
+reduce the chances that the ticklabels overlap the ticks
+are labeled as deltas from a fixed offset.  For example::
+
+   ax.plot(np.arange(2000, 2010), range(10))
+
+will have tick of 0-9 with an offset of +2e3.  If this
+is not desired turn off the use of the offset on the default
+formatter::
+
+
+   ax.get_xaxis().get_major_formatter().set_useOffset(False)
+
+set the rcParam ``axes.formatter.useoffset=False`` to turn it off
+globally, or set a different formatter.
+
 Tick locating
 -------------
 
 The Locator class is the base class for all tick locators.  The locators
 handle autoscaling of the view limits based on the data limits, and the
 choosing of tick locations.  A useful semi-automatic tick locator is
-MultipleLocator.  You initialize this with a base, eg 10, and it picks axis
+MultipleLocator.  You initialize this with a base, e.g., 10, and it picks axis
 limits and ticks that are multiples of your base.
 
 The Locator subclasses defined here are
@@ -43,7 +63,7 @@ The Locator subclasses defined here are
     intelligent ticking during navigation
 
 :class:`MaxNLocator`
-    finds up to a max number of ticks at nice  locations
+    finds up to a max number of ticks at nice locations
 
 :class:`AutoLocator`
     :class:`MaxNLocator` with simple defaults. This is the default
@@ -73,7 +93,7 @@ methods are::
   ax.yaxis.set_major_locator( ymajorLocator )
   ax.yaxis.set_minor_locator( yminorLocator )
 
-The default minor locator is the NullLocator, eg no minor ticks on by
+The default minor locator is the NullLocator, e.g., no minor ticks on by
 default.
 
 Tick formatting
@@ -118,7 +138,7 @@ following methods::
   ax.yaxis.set_minor_formatter( yminorFormatter )
 
 See :ref:`pylab_examples-major_minor_demo1` for an example of setting
-major an minor ticks.  See the :mod:`matplotlib.dates` module for
+major and minor ticks.  See the :mod:`matplotlib.dates` module for
 more information and examples of using date locators and formatters.
 """
 
@@ -209,11 +229,9 @@ class Formatter(TickHelper):
 
     def fix_minus(self, s):
         """
-        some classes may want to replace a hyphen for minus with the
-        proper unicode symbol as described `here
-        <http://sourceforge.net/tracker/index.php?func=detail&aid=1962574&
-group_id=80706&atid=560720>`_.
-        The default is to do nothing
+        Some classes may want to replace a hyphen for minus with the
+        proper unicode symbol (U+2212) for typographical correctness.
+        The default is to not replace it.
 
         Note, if you use this method, e.g., in :meth:`format_data` or
         call, you probably don't want to use it for
@@ -794,6 +812,10 @@ class EngFormatter(Formatter):
     plus a specified unit, e.g., 10 MHz instead of 1e7.
     """
 
+    # the unicode for -6 is the greek letter mu
+    # commeted here due to bug in pep8
+    # (https://github.com/jcrocholl/pep8/issues/271)
+
     # The SI engineering prefixes
     ENG_PREFIXES = {
         -24: "y",
@@ -802,7 +824,7 @@ class EngFormatter(Formatter):
         -15: "f",
         -12: "p",
          -9: "n",
-         -6: "\u03bc",  # Greek letter mu
+         -6: "\u03bc",
          -3: "m",
           0: "",
           3: "k",
@@ -970,8 +992,8 @@ class Locator(TickHelper):
 class IndexLocator(Locator):
     """
     Place a tick on every multiple of some base number of points
-    plotted, eg on every 5th point.  It is assumed that you are doing
-    index plotting; ie the axis is 0, len(data).  This is mainly
+    plotted, e.g., on every 5th point.  It is assumed that you are doing
+    index plotting; i.e., the axis is 0, len(data).  This is mainly
     useful for x ticks.
     """
     def __init__(self, base, offset):
@@ -1123,7 +1145,7 @@ def closeto(x, y):
         return False
 
 
-class Base:
+class Base(object):
     'this solution has some hacks to deal with floating point inaccuracies'
     def __init__(self, base):
         assert(base > 0)

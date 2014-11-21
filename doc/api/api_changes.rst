@@ -14,8 +14,11 @@ For new features that were added to matplotlib, please see
 Changes in 1.4.x
 ================
 
+Code changes
+------------
+
 * A major refactoring of the axes module was made. The axes module has been
-split into smaller modules:
+  split into smaller modules:
 
     - the `_base` module, which contains a new private _AxesBase class. This
       class contains all methods except plotting and labelling methods.
@@ -47,6 +50,25 @@ original location:
   - mstream -> `from matplotlib import stream as mstream`
   - mtable -> `from matplotlib import table as mtable`
 
+* As part of the refactoring to enable Qt5 support, the module
+  `matplotlib.backends.qt4_compat` was renamed to
+  `matplotlib.qt_compat`.  `qt4_compat` is deprecated in 1.4 and
+  will be removed in 1.5.
+
+* The :func:`~matplotlib.pyplot.errorbar` method has been changed such that
+  the upper and lower limits (*lolims*, *uplims*, *xlolims*, *xuplims*) now
+  point in the correct direction.
+
+* The *fmt* kwarg for :func:`~matplotlib.pyplot.errorbar now supports
+  the string 'none' to suppress drawing of a line and markers; use
+  of the *None* object for this is deprecated. The default *fmt*
+  value is changed to the empty string (''), so the line and markers
+  are governed by the :func:`~matplotlib.pyplot.plot` defaults.
+
+* A bug has been fixed in the path effects rendering of fonts, which now means
+  that the font size is consistent with non-path effect fonts. See
+  https://github.com/matplotlib/matplotlib/issues/2889 for more detail.
+
 * The Sphinx extensions `ipython_directive` and
   `ipython_console_highlighting` have been moved to the IPython
   project itself.  While they remain in matplotlib for this release,
@@ -54,10 +76,11 @@ original location:
   point to `IPython.sphinxext.ipython_directive` instead of
   `matplotlib.sphinxext.ipython_directive`.
 
-* In :module:`~matplotlib.finance`, almost all functions have been deprecated and
-  replaced with a pair of functions name `*_ochl` and `*_ohlc`.  The former is
-  'open-close-high-low' order of quotes, and what the module used and the later
-  is 'open-high-low-close' order of quotes, which is the standard in finance.
+* In `~matplotlib.finance`, almost all functions have been deprecated
+  and replaced with a pair of functions name `*_ochl` and `*_ohlc`.
+  The former is the 'open-close-high-low' order of quotes used
+  previously in this module, and the latter is the
+  'open-high-low-close' order that is standard in finance.
 
 * For consistency the ``face_alpha`` keyword to
   :class:`matplotlib.patheffects.SimplePatchShadow` has been deprecated in
@@ -134,6 +157,10 @@ original location:
 * Removed the class `FigureManagerQTAgg` and deprecated `NavigationToolbar2QTAgg`
   which will be removed in 1.5.
 
+* Removed formerly public (non-prefixed) attributes `rect` and
+  `drawRect` from `FigureCanvasQTAgg`; they were always an
+  implementation detail of the (preserved) `drawRectangle()` function.
+
 * The function signatures of `tight_bbox.adjust_bbox` and
   `tight_bbox.process_figure_for_rasterizing` have been changed. A new
   `fixed_dpi` parameter allows for overriding the `figure.dpi` setting
@@ -148,6 +175,50 @@ original location:
   which can be created using the `skew` and `skew_deg` methods.
 
 * Added clockwise parameter to control sectors direction in `axes.pie`
+
+* In `matplotlib.lines.Line2D` the `markevery` functionality has been extended.
+  Previously an integer start-index and stride-length could be specified using
+  either a two-element-list or a two-element-tuple.  Now this can only be done
+  using a two-element-tuple.  If a two-element-list is used then it will be
+  treated as numpy fancy indexing and only the two markers corresponding to the
+  given indexes will be shown.
+
+* removed prop kwarg from `mpl_toolkits.axes_grid1.anchored_artists.AnchoredSizeBar`
+  call.  It was passed through to the base-class `__init__` and is only used for
+  setting padding.  Now `fontproperties` (which is what is really used to set
+  the font properties of `AnchoredSizeBar`) is passed through in place of `prop`.
+  If `fontpropreties` is not passed in, but `prop` is, then `prop` is used inplace
+  of `fontpropreties`.  If both are passed in, `prop` is silently ignored.
+
+
+* The use of the index 0 in `plt.subplot` and related commands is
+  deprecated.  Due to a lack of validation calling `plt.subplots(2, 2,
+  0)` does not raise an exception, but puts an axes in the _last_
+  position.  This is due to the indexing in subplot being 1-based (to
+  mirror MATLAB) so before indexing into the `GridSpec` object used to
+  determine where the axes should go, 1 is subtracted off.  Passing in
+  0 results in passing -1 to `GridSpec` which results in getting the
+  last position back.  Even though this behavior is clearly wrong and
+  not intended, we are going through a deprecation cycle in an
+  abundance of caution that any users are exploiting this 'feature'.
+  The use of 0 as an index will raise a warning in 1.4 and an
+  exception in 1.5.
+
+* Clipping is now off by default on offset boxes.
+
+* matplotlib now uses a less-aggressive call to ``gc.collect(1)`` when
+  closing figures to avoid major delays with large numbers of user objects
+  in memory.
+
+* The default clip value of *all* pie artists now defaults to ``False``.
+
+
+Code removal
+------------
+
+* Removed ``mlab.levypdf``.  The code raised a numpy error (and has for
+  a long time) and was not the standard form of the Levy distribution.
+  ``scipy.stats.levy`` should be used instead
 
 
 .. _changes_in_1_3:
@@ -1234,7 +1305,7 @@ Changes for 0.90.1
     units.ConversionInterface.tickers renamed to
     units.ConversionInterface.axisinfo and it now returns a
     units.AxisInfo object rather than a tuple.  This will make it
-    easier to add axis info functionality (eg I added a default label
+    easier to add axis info functionality (e.g., I added a default label
     on this iteration) w/o having to change the tuple length and hence
     the API of the client code every time new functionality is added.
     Also, units.ConversionInterface.convert_to_value is now simply
@@ -1268,7 +1339,7 @@ Changes for 0.90.1
 
     Moved data files into lib/matplotlib so that setuptools' develop
     mode works. Re-organized the mpl-data layout so that this source
-    structure is maintained in the installation. (I.e. the 'fonts' and
+    structure is maintained in the installation. (i.e., the 'fonts' and
     'images' sub-directories are maintained in site-packages.).
     Suggest removing site-packages/matplotlib/mpl-data and
     ~/.matplotlib/ttffont.cache before installing
@@ -1719,7 +1790,7 @@ Changes for 0.71
    pylab still imports most of the symbols from Numerix, MLab, fft,
    etc, but is more cautious.  For names that clash with python names
    (min, max, sum), pylab keeps the builtins and provides the numeric
-   versions with an a* prefix, eg (amin, amax, asum)
+   versions with an a* prefix, e.g., (amin, amax, asum)
 
 Changes for 0.70
 ================
@@ -1739,7 +1810,7 @@ Changes for 0.65.1
   removed add_axes and add_subplot from backend_bases.  Use
   figure.add_axes and add_subplot instead.  The figure now manages the
   current axes with gca and sca for get and set current axes.  If you
-  have code you are porting which called, eg, figmanager.add_axes, you
+  have code you are porting which called, e.g., figmanager.add_axes, you
   can now simply do figmanager.canvas.figure.add_axes.
 
 Changes for 0.65
@@ -1866,7 +1937,7 @@ pcolor_classic and scatter_classic.
 
 The return value from pcolor is a PolyCollection.  Most of the
 propertes that are available on rectangles or other patches are also
-available on PolyCollections, eg you can say::
+available on PolyCollections, e.g., you can say::
 
   c = scatter(blah, blah)
   c.set_linewidth(1.0)
@@ -1884,7 +1955,7 @@ over the return value of scatter or pcolor to set properties for the
 entire list.
 
 If you want the different elements of a collection to vary on a
-property, eg to have different line widths, see matplotlib.collections
+property, e.g., to have different line widths, see matplotlib.collections
 for a discussion on how to set the properties as a sequence.
 
 For scatter, the size argument is now in points^2 (the area of the
@@ -2007,7 +2078,7 @@ Transformations
   implementations, matplotlib.transforms.SeparableTransformation and
   matplotlib.transforms.Affine.  The SeparableTransformation is
   constructed with the bounding box of the input (this determines the
-  rectangular coordinate system of the input, ie the x and y view
+  rectangular coordinate system of the input, i.e., the x and y view
   limits), the bounding box of the display, and possibly nonlinear
   transformations of x and y.  The 2 most frequently used
   transformations, data coordinates -> display and axes coordinates ->
@@ -2144,7 +2215,7 @@ Changes for 0.42
     needed with double buffered drawing.  Ditto with state change.
     Text instances have a get_prop_tup method that returns a hashable
     tuple of text properties which you can use to see if text props
-    have changed, eg by caching a font or layout instance in a dict
+    have changed, e.g., by caching a font or layout instance in a dict
     with the prop tup as a key -- see RendererGTK.get_pango_layout in
     backend_gtk for an example.
 
@@ -2165,7 +2236,7 @@ Changes for 0.42
 
   * matplotlib.matlab._get_current_fig_manager renamed to
     matplotlib.matlab.get_current_fig_manager to allow user access to
-    the GUI window attribute, eg figManager.window for GTK and
+    the GUI window attribute, e.g., figManager.window for GTK and
     figManager.frame for wx
 
 Changes for 0.40

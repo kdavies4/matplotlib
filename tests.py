@@ -10,6 +10,7 @@
 # these options.
 
 import os
+import sys
 import time
 
 import matplotlib
@@ -35,8 +36,22 @@ from nose.plugins import multiprocess
 multiprocess._instantiate_plugins = plugins
 
 def run():
+    try:
+        import faulthandler
+    except ImportError:
+        pass
+    else:
+        faulthandler.enable()
+
     nose.main(addplugins=[x() for x in plugins],
               defaultTest=default_test_modules)
 
 if __name__ == '__main__':
+    if '--no-pep8' in sys.argv:
+        default_test_modules.remove('matplotlib.tests.test_coding_standards')
+        sys.argv.remove('--no-pep8')
+    elif '--pep8' in sys.argv:
+        default_test_modules = ['matplotlib.tests.test_coding_standards']
+        sys.argv.remove('--pep8')
+
     run()

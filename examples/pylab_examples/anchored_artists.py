@@ -1,7 +1,7 @@
 from matplotlib.patches import Rectangle, Ellipse
 
 from matplotlib.offsetbox import AnchoredOffsetbox, AuxTransformBox, VPacker,\
-     TextArea, DrawingArea
+    TextArea, DrawingArea
 
 
 class AnchoredText(AnchoredOffsetbox):
@@ -9,7 +9,6 @@ class AnchoredText(AnchoredOffsetbox):
 
         self.txt = TextArea(s,
                             minimumdescent=False)
-
 
         super(AnchoredText, self).__init__(loc, pad=pad, borderpad=borderpad,
                                            child=self.txt,
@@ -28,7 +27,7 @@ class AnchoredSizeBar(AnchoredOffsetbox):
         sep in points.
         """
         self.size_bar = AuxTransformBox(transform)
-        self.size_bar.add_artist(Rectangle((0,0), size, 0, fc="none"))
+        self.size_bar.add_artist(Rectangle((0, 0), size, 0, fc="none"))
 
         self.txt_label = TextArea(label, minimumdescent=False)
 
@@ -51,14 +50,13 @@ class AnchoredEllipse(AnchoredOffsetbox):
         pad, borderpad in fraction of the legend font size (or prop)
         """
         self._box = AuxTransformBox(transform)
-        self.ellipse = Ellipse((0,0), width, height, angle)
+        self.ellipse = Ellipse((0, 0), width, height, angle)
         self._box.add_artist(self.ellipse)
 
         AnchoredOffsetbox.__init__(self, loc, pad=pad, borderpad=borderpad,
                                    child=self._box,
                                    prop=prop,
                                    frameon=frameon)
-
 
 
 class AnchoredDrawingArea(AnchoredOffsetbox):
@@ -71,7 +69,6 @@ class AnchoredDrawingArea(AnchoredOffsetbox):
                                                   child=self.da,
                                                   prop=None,
                                                   frameon=frameon)
-
 
 
 if __name__ == "__main__":
@@ -101,7 +98,7 @@ if __name__ == "__main__":
 
     # draw a horizontal bar with length of 0.1 in Data coordinate
     # (ax.transData) with a label underneath.
-    asb =  AnchoredSizeBar(ax.transData,
+    asb = AnchoredSizeBar(ax.transData,
                           0.1,
                           r"1$^{\prime}$",
                           loc=8,
@@ -111,7 +108,3 @@ if __name__ == "__main__":
 
     plt.draw()
     plt.show()
-
-
-
-

@@ -163,7 +163,7 @@ def get_cmap(name=None, lut=None):
             % (name, ', '.join(cmap_d.keys())))
 
 
-class ScalarMappable:
+class ScalarMappable(object):
     """
     This is a mixin class to support scalar data to RGBA mapping.
     The ScalarMappable makes use of data normalization before returning
@@ -178,9 +178,10 @@ class ScalarMappable:
         norm : :class:`matplotlib.colors.Normalize` instance
             The normalizing object which scales data, typically into the
             interval ``[0, 1]``.
+            If *None*, *norm* defaults to a *colors.Normalize* object which
+            initializes its scaling based on the first data processed.
         cmap : str or :class:`~matplotlib.colors.Colormap` instance
             The colormap used to map normalized data values to RGBA colors.
-
         """
 
         self.callbacksSM = cbook.CallbackRegistry()

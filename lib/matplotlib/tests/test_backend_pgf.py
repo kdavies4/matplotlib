@@ -80,8 +80,8 @@ def create_figure():
     plt.plot([0.9], [0.5], "ro", markersize=3)
     plt.text(0.9, 0.5, 'unicode (ü, °, µ) and math ($\\mu_i = x_i^2$)',
              ha='right', fontsize=20)
-    plt.ylabel('sans-serif with math $\\frac{\\sqrt{x}}{y^2}$..',
-               family='sans-serif')
+    plt.ylabel('sans-serif, blue, $\\frac{\\sqrt{x}}{y^2}$..',
+               family='sans-serif', color='blue')
 
 
 # test compiling a figure to pdf with xelatex
@@ -148,6 +148,10 @@ def test_pathclip():
     if not check_for('xelatex'):
         raise SkipTest('xelatex + pgf is required')
 
+    rc_xelatex = {'font.family': 'serif',
+                  'pgf.rcfonts': False}
+    mpl.rcParams.update(rc_xelatex)
+
     plt.figure()
     plt.plot([0., 1e100], [0., 1e100])
     plt.xlim(0, 1)
@@ -162,6 +166,10 @@ def test_mixedmode():
     if not check_for('xelatex'):
         raise SkipTest('xelatex + pgf is required')
 
+    rc_xelatex = {'font.family': 'serif',
+                  'pgf.rcfonts': False}
+    mpl.rcParams.update(rc_xelatex)
+
     Y, X = np.ogrid[-1:1:40j, -1:1:40j]
     plt.figure()
     plt.pcolor(X**2 + Y**2).set_rasterized(True)
@@ -173,6 +181,10 @@ def test_mixedmode():
 def test_bbox_inches():
     if not check_for('xelatex'):
         raise SkipTest('xelatex + pgf is required')
+
+    rc_xelatex = {'font.family': 'serif',
+                  'pgf.rcfonts': False}
+    mpl.rcParams.update(rc_xelatex)
 
     Y, X = np.ogrid[-1:1:40j, -1:1:40j]
     fig = plt.figure()

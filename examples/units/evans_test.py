@@ -10,24 +10,25 @@ import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 
 
-class Foo:
-    def __init__( self, val, unit=1.0 ):
+class Foo(object):
+    def __init__(self, val, unit=1.0):
         self.unit = unit
         self._val = val * unit
 
-    def value( self, unit ):
-        if unit is None: unit = self.unit
+    def value(self, unit):
+        if unit is None:
+            unit = self.unit
         return self._val / unit
 
-class FooConverter:
 
+class FooConverter(object):
     @staticmethod
     def axisinfo(unit, axis):
         'return the Foo AxisInfo'
-        if unit==1.0 or unit==2.0:
+        if unit == 1.0 or unit == 2.0:
             return units.AxisInfo(
-                majloc = ticker.IndexLocator( 8, 0 ),
-                majfmt = ticker.FormatStrFormatter("VAL: %s"),
+                majloc=ticker.IndexLocator(8, 0),
+                majfmt=ticker.FormatStrFormatter("VAL: %s"),
                 label='foo',
                 )
 
@@ -61,19 +62,19 @@ units.registry[Foo] = FooConverter()
 
 # create some Foos
 x = []
-for val in range( 0, 50, 2 ):
-    x.append( Foo( val, 1.0 ) )
+for val in range(0, 50, 2):
+    x.append(Foo(val, 1.0))
 
 # and some arbitrary y data
-y = [i for i in range( len(x) ) ]
+y = [i for i in range(len(x))]
 
 
 # plot specifying units
 fig = plt.figure()
 fig.suptitle("Custom units")
 fig.subplots_adjust(bottom=0.2)
-ax = fig.add_subplot(1,2,2)
-ax.plot( x, y, 'o', xunits=2.0 )
+ax = fig.add_subplot(1, 2, 2)
+ax.plot(x, y, 'o', xunits=2.0)
 for label in ax.get_xticklabels():
     label.set_rotation(30)
     label.set_ha('right')
@@ -81,8 +82,8 @@ ax.set_title("xunits = 2.0")
 
 
 # plot without specifying units; will use the None branch for axisinfo
-ax = fig.add_subplot(1,2,1)
-ax.plot( x, y ) # uses default units
+ax = fig.add_subplot(1, 2, 1)
+ax.plot(x, y)  # uses default units
 ax.set_title('default units')
 for label in ax.get_xticklabels():
     label.set_rotation(30)

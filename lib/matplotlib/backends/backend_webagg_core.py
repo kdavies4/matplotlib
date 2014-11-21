@@ -65,13 +65,19 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
         # sent to the clients will be a full frame.
         self._force_full = True
 
+        # Store the current image mode so that at any point, clients can
+        # request the information. This should be changed by calling
+        # self.set_image_mode(mode) so that the notification can be given
+        # to the connected clients.
+        self._current_image_mode = 'full'
+
     def show(self):
         # show the figure window
         from matplotlib.pyplot import show
         show()
 
     def draw(self):
-        renderer = self.get_renderer()
+        renderer = self.get_renderer(cleared=True)
 
         self._png_is_old = True
 
@@ -86,26 +92,47 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
     def draw_idle(self):
         self.send_event("draw")
 
+    def set_image_mode(self, mode):
+        """
+        Set the image mode for any subsequent images which will be sent
+        to the clients. The modes may currently be either 'full' or 'diff'.
+
+        Note: diff images may not contain transparency, therefore upon
+        draw this mode may be changed if the resulting image has any
+        transparent component.
+
+        """
+        if mode not in ['full', 'diff']:
+            raise ValueError('image mode must be either full or diff.')
+        if self._current_image_mode != mode:
+            self._current_image_mode = mode
+            self.handle_send_image_mode(None)
+
     def get_diff_image(self):
         if self._png_is_old:
+            renderer = self.get_renderer()
+
             # The buffer is created as type uint32 so that entire
             # pixels can be compared in one numpy call, rather than
             # needing to compare each plane separately.
-            buff = np.frombuffer(
-                self._renderer.buffer_rgba(), dtype=np.uint32)
-            buff.shape = (
-                self._renderer.height, self._renderer.width)
+            buff = np.frombuffer(renderer.buffer_rgba(), dtype=np.uint32)
+            buff.shape = (renderer.height, renderer.width)
 
-            if not self._force_full:
-                last_buffer = np.frombuffer(
-                    self._last_renderer.buffer_rgba(), dtype=np.uint32)
-                last_buffer.shape = (
-                    self._renderer.height, self._renderer.width)
+            # If any pixels have transparency, we need to force a full
+            # draw as we cannot overlay new on top of old.
+            pixels = buff.view(dtype=np.uint8).reshape(buff.shape + (4,))
+
+            if self._force_full or np.any(pixels[:, :, 3] != 255):
+                self.set_image_mode('full')
+                output = buff
+            else:
+                self.set_image_mode('diff')
+                last_buffer = np.frombuffer(self._last_renderer.buffer_rgba(),
+                                            dtype=np.uint32)
+                last_buffer.shape = (renderer.height, renderer.width)
 
                 diff = buff != last_buffer
                 output = np.where(diff, buff, 0)
-            else:
-                output = buff
 
             # Clear out the PNG data buffer rather than recreating it
             # each time.  This reduces the number of memory
@@ -116,20 +143,19 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
             # TODO: We should write a new version of write_png that
             # handles the differencing inline
             _png.write_png(
-                output.tostring(),
-                output.shape[1], output.shape[0],
+                output.view(dtype=np.uint8).reshape(output.shape + (4,)),
                 self._png_buffer)
 
             # Swap the renderer frames
             self._renderer, self._last_renderer = (
-                self._last_renderer, self._renderer)
+                self._last_renderer, renderer)
             self._force_full = False
             self._png_is_old = False
         return self._png_buffer.getvalue()
 
     def get_renderer(self, cleared=None):
         # Mirrors super.get_renderer, but caches the old one
-        # so that we can do things such as prodce a diff image
+        # so that we can do things such as produce a diff image
         # in get_diff_image
         _, _, w, h = self.figure.bbox.bounds
         key = w, h, self.figure.dpi
@@ -146,6 +172,9 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
             self._last_renderer = backend_agg.RendererAgg(
                 w, h, self.figure.dpi)
             self._lastKey = key
+
+        elif cleared:
+            self._renderer.clear()
 
         return self._renderer
 
@@ -200,6 +229,32 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
             self.send_event('figure_label', label=figure_label)
             self._force_full = True
             self.draw_idle()
+        else:
+            handler = getattr(self, 'handle_{}'.format(e_type), None)
+            if handler is None:
+                import warnings
+                warnings.warn('Unhandled message type {}. {}'.format(
+                                                        e_type, event))
+            else:
+                return handler(event)
+
+    def handle_resize(self, event):
+        x, y = event.get('width', 800), event.get('height', 800)
+        x, y = int(x), int(y)
+        fig = self.figure
+        # An attempt at approximating the figure size in pixels.
+        fig.set_size_inches(x / fig.dpi, y / fig.dpi)
+
+        _, _, w, h = self.figure.bbox.bounds
+        # Acknowledge the resize, and force the viewer to update the
+        # canvas size to the figure's new size (which is hopefully
+        # identical or within a pixel or so).
+        self._png_is_old = True
+        self.manager.resize(w, h)
+
+    def handle_send_image_mode(self, event):
+        # The client requests notification of what the current image mode is.
+        self.send_event('image_mode', mode=self._current_image_mode)
 
     def send_event(self, event_type, **kwargs):
         self.manager._send_event(event_type, **kwargs)
@@ -216,7 +271,57 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
         backend_bases.FigureCanvasBase.stop_event_loop_default.__doc__
 
 
+_JQUERY_ICON_CLASSES = {
+    'home': 'ui-icon ui-icon-home',
+    'back': 'ui-icon ui-icon-circle-arrow-w',
+    'forward': 'ui-icon ui-icon-circle-arrow-e',
+    'zoom_to_rect': 'ui-icon ui-icon-search',
+    'move': 'ui-icon ui-icon-arrow-4',
+    'download': 'ui-icon ui-icon-disk',
+    None: None,
+}
+
+
+class NavigationToolbar2WebAgg(backend_bases.NavigationToolbar2):
+
+    # Use the standard toolbar items + download button
+    toolitems = [(text, tooltip_text, _JQUERY_ICON_CLASSES[image_file],
+                  name_of_method)
+                 for text, tooltip_text, image_file, name_of_method
+                 in (backend_bases.NavigationToolbar2.toolitems +
+                     (('Download', 'Download plot', 'download', 'download'),))
+                 if image_file in _JQUERY_ICON_CLASSES]
+
+    def _init_toolbar(self):
+        self.message = ''
+        self.cursor = 0
+
+    def set_message(self, message):
+        if message != self.message:
+            self.canvas.send_event("message", message=message)
+        self.message = message
+
+    def set_cursor(self, cursor):
+        if cursor != self.cursor:
+            self.canvas.send_event("cursor", cursor=cursor)
+        self.cursor = cursor
+
+    def dynamic_update(self):
+        self.canvas.draw_idle()
+
+    def draw_rubberband(self, event, x0, y0, x1, y1):
+        self.canvas.send_event(
+            "rubberband", x0=x0, y0=y0, x1=x1, y1=y1)
+
+    def release_zoom(self, event):
+        backend_bases.NavigationToolbar2.release_zoom(self, event)
+        self.canvas.send_event(
+            "rubberband", x0=-1, y0=-1, x1=-1, y1=-1)
+
+
 class FigureManagerWebAgg(backend_bases.FigureManagerBase):
+    ToolbarCls = NavigationToolbar2WebAgg
+
     def __init__(self, canvas, num):
         backend_bases.FigureManagerBase.__init__(self, canvas, num)
 
@@ -228,7 +333,7 @@ class FigureManagerWebAgg(backend_bases.FigureManagerBase):
         pass
 
     def _get_toolbar(self, canvas):
-        toolbar = NavigationToolbar2WebAgg(canvas)
+        toolbar = self.ToolbarCls(canvas)
         return toolbar
 
     def resize(self, w, h):
@@ -275,7 +380,7 @@ class FigureManagerWebAgg(backend_bases.FigureManagerBase):
             output.write(fd.read())
 
         toolitems = []
-        for name, tooltip, image, method in NavigationToolbar2WebAgg.toolitems:
+        for name, tooltip, image, method in cls.ToolbarCls.toolitems:
             if name is None:
                 toolitems.append(['', '', '', ''])
             else:
@@ -306,57 +411,3 @@ class FigureManagerWebAgg(backend_bases.FigureManagerBase):
         payload.update(kwargs)
         for s in self.web_sockets:
             s.send_json(payload)
-
-
-class NavigationToolbar2WebAgg(backend_bases.NavigationToolbar2):
-    _jquery_icon_classes = {
-        'home': 'ui-icon ui-icon-home',
-        'back': 'ui-icon ui-icon-circle-arrow-w',
-        'forward': 'ui-icon ui-icon-circle-arrow-e',
-        'zoom_to_rect': 'ui-icon ui-icon-search',
-        'move': 'ui-icon ui-icon-arrow-4',
-        'download': 'ui-icon ui-icon-disk',
-        None: None
-    }
-
-    def _init_toolbar(self):
-        # Use the standard toolbar items + download button
-        toolitems = (
-            backend_bases.NavigationToolbar2.toolitems +
-            (('Download', 'Download plot', 'download', 'download'),)
-        )
-
-        NavigationToolbar2WebAgg.toolitems = \
-            tuple(
-                (text, tooltip_text, self._jquery_icon_classes[image_file],
-                 name_of_method)
-                for text, tooltip_text, image_file, name_of_method
-                in toolitems if image_file in self._jquery_icon_classes)
-
-        self.message = ''
-        self.cursor = 0
-
-    def set_message(self, message):
-        if message != self.message:
-            self.canvas.send_event("message", message=message)
-        self.message = message
-
-    def set_cursor(self, cursor):
-        if cursor != self.cursor:
-            self.canvas.send_event("cursor", cursor=cursor)
-        self.cursor = cursor
-
-    def dynamic_update(self):
-        self.canvas.draw_idle()
-
-    def draw_rubberband(self, event, x0, y0, x1, y1):
-        self.canvas.send_event(
-            "rubberband", x0=x0, y0=y0, x1=x1, y1=y1)
-
-    def release_zoom(self, event):
-        super(NavigationToolbar2WebAgg, self).release_zoom(event)
-        self.canvas.send_event(
-            "rubberband", x0=-1, y0=-1, x1=-1, y1=-1)
-
-FigureCanvas = FigureCanvasWebAggCore
-FigureManager = FigureManagerWebAgg

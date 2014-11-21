@@ -68,6 +68,7 @@ except:
 try:
     from PIL import Image
     _has_pil = True
+    del Image
 except ImportError:
     _has_pil = False
 
@@ -98,19 +99,21 @@ _default_backends = {
 }
 
 
-def register_backend(format, backend, description):
+def register_backend(format, backend, description=None):
     """
     Register a backend for saving to a given file format.
 
-    *format*
+    format : str
         File extention
 
-    *backend*
-        Backend for handling file output (module string or canvas class)
+    backend : module string or canvas class
+        Backend for handling file output
 
-    *description*
-        Description of the file type
+    description : str, optional
+        Description of the file type.  Defaults to an empty string
     """
+    if description is None:
+        description = ''
     _default_backends[format] = backend
     _default_filetypes[format] = description
 
@@ -141,7 +144,7 @@ class ShowBase(object):
         it is a boolean that overrides all other factors
         determining whether show blocks by calling mainloop().
         The other factors are:
-        it does not block if run inside "ipython --pylab";
+        it does not block if run inside ipython's "%pylab" mode
         it does not block in interactive mode.
         """
         managers = Gcf.get_all_fig_managers()
@@ -165,11 +168,11 @@ class ShowBase(object):
             ipython_pylab = not pyplot.show._needmain
             # IPython versions >= 0.10 tack the _needmain
             # attribute onto pyplot.show, and always set
-            # it to False, when in --pylab mode.
+            # it to False, when in %pylab mode.
             ipython_pylab = ipython_pylab and get_backend() != 'WebAgg'
             # TODO: The above is a hack to get the WebAgg backend
-            # working with `ipython --pylab` until proper integration
-            # is implemented.
+            # working with ipython's `%pylab` mode until proper
+            # integration is implemented.
         except AttributeError:
             ipython_pylab = False
 
@@ -381,6 +384,23 @@ class RendererBase(object):
             if Ntransforms:
                 transform = Affine2D(all_transforms[i % Ntransforms])
             yield path, transform + master_transform
+
+    def _iter_collection_uses_per_path(self, paths, all_transforms,
+                                       offsets, facecolors, edgecolors):
+        """
+        Compute how many times each raw path object returned by
+        _iter_collection_raw_paths would be used when calling
+        _iter_collection. This is intended for the backend to decide
+        on the tradeoff between using the paths in-line and storing
+        them once and reusing. Rounds up in case the number of uses
+        is not the same for every path.
+        """
+        Npaths = len(paths)
+        if Npaths == 0 or (len(facecolors) == 0 and len(edgecolors) == 0):
+            return 0
+        Npath_ids = max(Npaths, len(all_transforms))
+        N = max(Npath_ids, len(offsets))
+        return (N + Npath_ids - 1) // Npath_ids
 
     def _iter_collection(self, gc, master_transform, all_transforms,
                          path_ids, offsets, offsetTrans, facecolors,
@@ -698,7 +718,7 @@ class RendererBase(object):
         return points converted to pixels
 
         You need to override this function (unless your backend
-        doesn't have a dpi, eg, postscript or svg).  Some imaging
+        doesn't have a dpi, e.g., postscript or svg).  Some imaging
         systems assume some value for pixels per inch::
 
             points to pixels = points * pixels_per_inch/72.0 * dpi/72.0
@@ -739,7 +759,7 @@ class RendererBase(object):
         pass
 
 
-class GraphicsContextBase:
+class GraphicsContextBase(object):
     """
     An abstract base class that provides color, line styles, etc...
     """
@@ -764,7 +784,6 @@ class GraphicsContextBase:
         self._linestyle = 'solid'
         self._linewidth = 1
         self._rgb = (0.0, 0.0, 0.0, 1.0)
-        self._orig_color = (0.0, 0.0, 0.0, 1.0)
         self._hatch = None
         self._url = None
         self._gid = None
@@ -784,7 +803,6 @@ class GraphicsContextBase:
         self._linestyle = gc._linestyle
         self._linewidth = gc._linewidth
         self._rgb = gc._rgb
-        self._orig_color = gc._orig_color
         self._hatch = gc._hatch
         self._url = gc._url
         self._gid = gc._gid
@@ -918,7 +936,7 @@ class GraphicsContextBase:
         else:
             self._alpha = 1.0
             self._forced_alpha = False
-        self.set_foreground(self._orig_color)
+        self.set_foreground(self._rgb, isRGBA=True)
 
     def set_antialiased(self, b):
         """
@@ -980,8 +998,9 @@ class GraphicsContextBase:
 
         If you know fg is rgba, set ``isRGBA=True`` for efficiency.
         """
-        self._orig_color = fg
-        if self._forced_alpha:
+        if self._forced_alpha and isRGBA:
+            self._rgb = fg[:3] + (self._alpha,)
+        elif self._forced_alpha:
             self._rgb = colors.colorConverter.to_rgba(fg, self._alpha)
         elif isRGBA:
             self._rgb = fg
@@ -992,7 +1011,6 @@ class GraphicsContextBase:
         """
         Set the foreground color to be a gray level with *frac*
         """
-        self._orig_color = frac
         self._rgb = (frac, frac, frac, self._alpha)
 
     def set_joinstyle(self, js):
@@ -1278,7 +1296,7 @@ class TimerBase(object):
             self.stop()
 
 
-class Event:
+class Event(object):
     """
     A matplotlib event.  Attach additional attributes as defined in
     :meth:`FigureCanvasBase.mpl_connect`.  The following attributes
@@ -1532,7 +1550,7 @@ class PickEvent(Event):
         the :class:`~matplotlib.artist.Artist` picked
 
     other
-        extra class dependent attrs -- eg a
+        extra class dependent attrs -- e.g., a
         :class:`~matplotlib.lines.Line2D` pick may define different
         extra attributes than a
         :class:`~matplotlib.collections.PatchCollection` pick event
@@ -1954,6 +1972,7 @@ class FigureCanvasBase(object):
         s = 'idle_event'
         event = IdleEvent(s, self, guiEvent=guiEvent)
         self.callbacks.process(s, event)
+        return True
 
     def grab_mouse(self, ax):
         """
@@ -2214,7 +2233,7 @@ class FigureCanvasBase(object):
     def get_window_title(self):
         """
         Get the title text of the window containing the figure.
-        Return None if there is no window (eg, a PS backend).
+        Return None if there is no window (e.g., a PS backend).
         """
         if hasattr(self, "manager"):
             return self.manager.get_window_title()
@@ -2222,7 +2241,7 @@ class FigureCanvasBase(object):
     def set_window_title(self, title):
         """
         Set the title text of the window containing the figure.  Note that
-        this has no effect if there is no window (eg, a PS backend).
+        this has no effect if there is no window (e.g., a PS backend).
         """
         if hasattr(self, "manager"):
             self.manager.set_window_title(title)
@@ -2240,9 +2259,9 @@ class FigureCanvasBase(object):
         """
         Instantiate an instance of FigureCanvasClass
 
-        This is used for backend switching, eg, to instantiate a
+        This is used for backend switching, e.g., to instantiate a
         FigureCanvasPS from a FigureCanvasGTK.  Note, deep copying is
-        not done, so any changes to one of the instances (eg, setting
+        not done, so any changes to one of the instances (e.g., setting
         figure size or line props), will be reflected in the other
         """
         newCanvas = FigureCanvasClass(self.figure)
@@ -2456,9 +2475,11 @@ def key_press_handler(event, canvas, toolbar=None):
         # pan mnemonic (default key 'p')
         elif event.key in pan_keys:
             toolbar.pan()
+            toolbar._set_cursor(event)
         # zoom mnemonic (default key 'o')
         elif event.key in zoom_keys:
             toolbar.zoom()
+            toolbar._set_cursor(event)
         # saving current figure (default key 's')
         elif event.key in save_keys:
             toolbar.save_figure()
@@ -2514,7 +2535,7 @@ class NonGuiException(Exception):
     pass
 
 
-class FigureManagerBase:
+class FigureManagerBase(object):
     """
     Helper class for pyplot mode, wraps everything up into a neat bundle
 
@@ -2579,19 +2600,19 @@ class FigureManagerBase:
     def get_window_title(self):
         """
         Get the title text of the window containing the figure.
-        Return None for non-GUI backends (eg, a PS backend).
+        Return None for non-GUI backends (e.g., a PS backend).
         """
         return 'image'
 
     def set_window_title(self, title):
         """
         Set the title text of the window containing the figure.  Note that
-        this has no effect for non-GUI backends (eg, a PS backend).
+        this has no effect for non-GUI backends (e.g., a PS backend).
         """
         pass
 
 
-class Cursors:
+class Cursors(object):
     # this class is only used as a simple namespace
     HAND, POINTER, SELECT_REGION, MOVE = list(range(4))
 cursors = Cursors()
@@ -2739,7 +2760,7 @@ class NavigationToolbar2(object):
         """
         raise NotImplementedError
 
-    def mouse_move(self, event):
+    def _set_cursor(self, event):
         if not event.inaxes or not self._active:
             if self._lastCursor != cursors.POINTER:
                 self.set_cursor(cursors.POINTER)
@@ -2754,6 +2775,9 @@ class NavigationToolbar2(object):
                 self.set_cursor(cursors.MOVE)
 
                 self._lastCursor = cursors.MOVE
+
+    def mouse_move(self, event):
+        self._set_cursor(event)
 
         if event.inaxes and event.inaxes.get_navigate():
 

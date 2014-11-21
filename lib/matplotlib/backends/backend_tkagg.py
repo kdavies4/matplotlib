@@ -345,7 +345,6 @@ class FigureCanvasTkAgg(FigureCanvasAgg):
             else:
                 self.leave_notify_event(guiEvent)
 
-
     def draw(self):
         FigureCanvasAgg.draw(self)
         tkagg.blit(self._tkphoto, self.renderer._renderer, colormode=2)
@@ -605,7 +604,7 @@ class FigureManagerTkAgg(FigureManagerBase):
         self.window.attributes('-fullscreen', not is_fullscreen)
 
 
-class AxisMenu:
+class AxisMenu(object):
     def __init__(self, master, naxes):
         self._master = master
         self._naxes = naxes

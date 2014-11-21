@@ -4,11 +4,13 @@ from __future__ import (absolute_import, division, print_function,
 import six
 
 import numpy as np
+from numpy.testing import assert_almost_equal
 import matplotlib
 from matplotlib.testing.decorators import image_comparison, knownfailureif, cleanup
 import matplotlib.pyplot as plt
 import warnings
-from nose.tools import with_setup
+from nose import SkipTest
+from nose.tools import with_setup, assert_raises
 
 
 @image_comparison(baseline_images=['font_styles'])
@@ -22,8 +24,8 @@ def test_font_styles():
         return FontProperties(fname=path)
 
     from matplotlib.font_manager import FontProperties, findfont
-    warnings.filterwarnings('ignore', 'findfont: Font family \[\'Foo\'\] '+ \
-                            'not found. Falling back to .',
+    warnings.filterwarnings('ignore', ('findfont: Font family \[u?\'Foo\'\] '+
+                            'not found. Falling back to .'),
                             UserWarning,
                             module='matplotlib.font_manager')
     fig = plt.figure()
@@ -197,6 +199,16 @@ def test_alignment():
     ax.set_yticks([])
 
 
+@image_comparison(baseline_images=['axes_titles'], extensions=['png'])
+def test_axes_titles():
+    # Related to issue #3327
+    fig = plt.figure()
+    ax = plt.subplot(1,1,1)
+    ax.set_title('center', loc='center', fontsize=20, fontweight=700)
+    ax.set_title('left', loc='left', fontsize=12, fontweight=400)
+    ax.set_title('right', loc='right', fontsize=12, fontweight=400)
+
+
 @cleanup
 def test_set_position():
     fig, ax = plt.subplots()
@@ -226,3 +238,43 @@ def test_set_position():
 
     for a, b in zip(init_pos.min, post_pos.min):
         assert a + shift_val == b
+
+
+def test_get_rotation_string():
+    from matplotlib import text
+    assert text.get_rotation('horizontal') == 0.
+    assert text.get_rotation('vertical') == 90.
+    assert text.get_rotation('15.') == 15.
+
+
+def test_get_rotation_float():
+    from matplotlib import text
+    for i in [15., 16.70, 77.4]:
+        assert text.get_rotation(i) == i
+
+
+def test_get_rotation_int():
+    from matplotlib import text
+    for i in [67, 16, 41]:
+        assert text.get_rotation(i) == float(i)
+
+
+def test_get_rotation_raises():
+    from matplotlib import text
+    import sys
+    if sys.version_info[:2] < (2, 7):
+        raise SkipTest("assert_raises as context manager "
+                       "not supported with Python < 2.7")
+    with assert_raises(ValueError):
+        text.get_rotation('hozirontal')
+
+
+def test_get_rotation_none():
+    from matplotlib import text
+    assert text.get_rotation(None) == 0.0
+
+
+def test_get_rotation_mod360():
+    from matplotlib import text
+    for i, j in zip([360., 377., 720+177.2], [0., 17., 177.2]):
+        assert_almost_equal(text.get_rotation(i), j)

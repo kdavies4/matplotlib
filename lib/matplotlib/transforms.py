@@ -648,10 +648,11 @@ class BboxBase(TransformNode):
             return 0
         vertices = np.asarray(vertices)
         x0, y0, x1, y1 = self._get_extents()
-        dx0 = np.sign(vertices[:, 0] - x0)
-        dy0 = np.sign(vertices[:, 1] - y0)
-        dx1 = np.sign(vertices[:, 0] - x1)
-        dy1 = np.sign(vertices[:, 1] - y1)
+        with np.errstate(invalid='ignore'):
+            dx0 = np.sign(vertices[:, 0] - x0)
+            dy0 = np.sign(vertices[:, 1] - y0)
+            dx1 = np.sign(vertices[:, 0] - x1)
+            dy1 = np.sign(vertices[:, 1] - y1)
         inside = ((abs(dx0 + dx1) + abs(dy0 + dy1)) == 0)
         return np.sum(inside)
 
@@ -661,7 +662,7 @@ class BboxBase(TransformNode):
 
         bboxes is a sequence of :class:`BboxBase` objects
         """
-        return count_bboxes_overlapping_bbox(self, bboxes)
+        return count_bboxes_overlapping_bbox(self, [np.array(x) for x in bboxes])
 
     def expanded(self, sw, sh):
         """
@@ -838,8 +839,16 @@ class Bbox(BboxBase):
         points = np.array(args, dtype=np.float_).reshape(2, 2)
         return Bbox(points)
 
+    def __format__(self, fmt):
+        return (
+            'Bbox(x0={0.x0:{1}}, y0={0.y0:{1}}, x1={0.x1:{1}}, y1={0.y1:{1}})'.
+            format(self, fmt))
+
+    def __str__(self):
+        return format(self, '')
+
     def __repr__(self):
-        return 'Bbox(%r)' % repr(self._points)
+        return 'Bbox([[{0.x0}, {0.y0}], [{0.x1}, {0.y1}]])'.format(self)
 
     def ignore(self, value):
         """
@@ -1371,8 +1380,9 @@ class Transform(TransformNode):
         ``transform_path(path)`` is equivalent to
         ``transform_path_affine(transform_path_non_affine(values))``.
         """
-        return Path(self.transform_non_affine(path.vertices), path.codes,
-                    path._interpolation_steps)
+        x = self.transform_non_affine(path.vertices)
+        return Path._fast_from_codes_and_verts(x, path.codes,
+                {'interpolation_steps': path._interpolation_steps})
 
     def transform_angles(self, angles, pts, radians=False, pushoff=1e-5):
         """
@@ -1659,7 +1669,7 @@ class Affine2DBase(AffineBase):
 
     def transform_point(self, point):
         mtx = self.get_matrix()
-        return affine_transform(point, mtx)
+        return affine_transform([point], mtx)[0]
     transform_point.__doc__ = AffineBase.transform_point.__doc__
 
     if DEBUG:
@@ -2578,8 +2588,8 @@ class TransformedPath(TransformNode):
             self._transformed_path = \
                 self._transform.transform_path_non_affine(self._path)
             self._transformed_points = \
-                Path(self._transform.transform_non_affine(self._path.vertices),
-                     None, self._path._interpolation_steps)
+                Path._fast_from_codes_and_verts(self._transform.transform_non_affine(self._path.vertices),
+                        None, {'interpolation_steps': self._path._interpolation_steps})
         self._invalid = 0
 
     def get_transformed_points_and_affine(self):

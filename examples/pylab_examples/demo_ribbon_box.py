@@ -6,14 +6,15 @@ from matplotlib._png import read_png
 import matplotlib.colors
 from matplotlib.cbook import get_sample_data
 
+
 class RibbonBox(object):
 
     original_image = read_png(get_sample_data("Minduka_Present_Blue_Pack.png",
                                               asfileobj=False))
     cut_location = 70
-    b_and_h = original_image[:,:,2]
-    color = original_image[:,:,2] - original_image[:,:,0]
-    alpha = original_image[:,:,3]
+    b_and_h = original_image[:, :, 2]
+    color = original_image[:, :, 2] - original_image[:, :, 0]
+    alpha = original_image[:, :, 3]
     nx = original_image.shape[1]
 
     def __init__(self, color):
@@ -22,13 +23,11 @@ class RibbonBox(object):
         im = np.empty(self.original_image.shape,
                       self.original_image.dtype)
 
-
-        im[:,:,:3] = self.b_and_h[:,:,np.newaxis]
-        im[:,:,:3] -= self.color[:,:,np.newaxis]*(1.-np.array(rgb))
-        im[:,:,3] = self.alpha
+        im[:, :, :3] = self.b_and_h[:, :, np.newaxis]
+        im[:, :, :3] -= self.color[:, :, np.newaxis]*(1. - np.array(rgb))
+        im[:, :, 3] = self.alpha
 
         self.im = im
-
 
     def get_stretched_image(self, stretch_factor):
         stretch_factor = max(stretch_factor, 1)
@@ -37,46 +36,44 @@ class RibbonBox(object):
 
         stretched_image = np.empty((ny2, nx, nch),
                                    self.im.dtype)
-        cut = self.im[self.cut_location,:,:]
-        stretched_image[:,:,:] = cut
-        stretched_image[:self.cut_location,:,:] = \
-                self.im[:self.cut_location,:,:]
-        stretched_image[-(ny-self.cut_location):,:,:] = \
-                self.im[-(ny-self.cut_location):,:,:]
+        cut = self.im[self.cut_location, :, :]
+        stretched_image[:, :, :] = cut
+        stretched_image[:self.cut_location, :, :] = \
+            self.im[:self.cut_location, :, :]
+        stretched_image[-(ny - self.cut_location):, :, :] = \
+            self.im[-(ny - self.cut_location):, :, :]
 
         self._cached_im = stretched_image
         return stretched_image
-
 
 
 class RibbonBoxImage(BboxImage):
     zorder = 1
 
     def __init__(self, bbox, color,
-                 cmap = None,
-                 norm = None,
+                 cmap=None,
+                 norm=None,
                  interpolation=None,
                  origin=None,
                  filternorm=1,
                  filterrad=4.0,
-                 resample = False,
+                 resample=False,
                  **kwargs
                  ):
 
         BboxImage.__init__(self, bbox,
-                           cmap = cmap,
-                           norm = norm,
+                           cmap=cmap,
+                           norm=norm,
                            interpolation=interpolation,
                            origin=origin,
                            filternorm=filternorm,
                            filterrad=filterrad,
-                           resample = resample,
+                           resample=resample,
                            **kwargs
                            )
 
         self._ribbonbox = RibbonBox(color)
         self._cached_ny = None
-
 
     def draw(self, renderer, *args, **kwargs):
 
@@ -111,7 +108,7 @@ if 1:
     ax.xaxis.set_major_formatter(fmt)
 
     for year, h, bc in zip(years, heights, box_colors):
-        bbox0 = Bbox.from_extents(year-0.4, 0., year+0.4, h)
+        bbox0 = Bbox.from_extents(year - 0.4, 0., year + 0.4, h)
         bbox = TransformedBbox(bbox0, ax.transData)
         rb_patch = RibbonBoxImage(bbox, bc, interpolation="bicubic")
 
@@ -125,15 +122,13 @@ if 1:
                                zorder=0.1,
                                )
     gradient = np.zeros((2, 2, 4), dtype=np.float)
-    gradient[:,:,:3] = [1, 1, 0.]
-    gradient[:,:,3] = [[0.1, 0.3],[0.3, 0.5]] # alpha channel
+    gradient[:, :, :3] = [1, 1, 0.]
+    gradient[:, :, 3] = [[0.1, 0.3], [0.3, 0.5]]  # alpha channel
     patch_gradient.set_array(gradient)
     ax.add_artist(patch_gradient)
 
-
-    ax.set_xlim(years[0]-0.5, years[-1]+0.5)
+    ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
     ax.set_ylim(0, 10000)
 
     fig.savefig('ribbon_box.png')
     plt.show()
-

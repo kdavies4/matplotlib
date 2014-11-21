@@ -29,7 +29,7 @@ rankings = np.round(np.random.uniform(0, 1, numTests)*100, 0)
 fig, ax1 = plt.subplots(figsize=(9, 7))
 plt.subplots_adjust(left=0.115, right=0.88)
 fig.canvas.set_window_title('Eldorado K-8 Fitness Chart')
-pos = np.arange(numTests)+0.5    # Center bars on the Y-axis ticks
+pos = np.arange(numTests) + 0.5  # Center bars on the Y-axis ticks
 rects = ax1.barh(pos, rankings, align='center', height=0.5, color='m')
 
 ax1.axis([0, 100, 0, 5])
@@ -46,8 +46,8 @@ ax2.xaxis.set_major_locator(MaxNLocator(11))
 xticks = pylab.setp(ax2, xticklabels=['0', '10', '20', '30', '40', '50', '60',
                                       '70', '80', '90', '100'])
 ax2.xaxis.grid(True, linestyle='--', which='major', color='grey',
-alpha=0.25)
-#Plot a solid vertical gridline to highlight the median position
+               alpha=0.25)
+# Plot a solid vertical gridline to highlight the median position
 plt.plot([50, 50], [0, 5], 'grey', alpha=0.25)
 
 # Build up the score labels for the right Y-axis by first appending a carriage
@@ -64,7 +64,7 @@ def withnew(i, scr):
         return scr
 
 scoreLabels = [withnew(i, scr) for i, scr in enumerate(scores)]
-scoreLabels = [i+j for i, j in zip(scoreLabels, testMeta)]
+scoreLabels = [i + j for i, j in zip(scoreLabels, testMeta)]
 # set the tick locations
 ax2.set_yticks(pos)
 # set the tick labels
@@ -74,11 +74,11 @@ ax2.set_ylim(ax1.get_ylim())
 
 
 ax2.set_ylabel('Test Scores')
-#Make list of numerical suffixes corresponding to position in a list
+# Make list of numerical suffixes corresponding to position in a list
 #            0     1     2     3     4     5     6     7     8     9
 suffixes = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th']
 ax2.set_xlabel('Percentile Ranking Across ' + str(grade) + suffixes[grade]
-              + ' Grade ' + gender.title() + 's')
+               + ' Grade ' + gender.title() + 's')
 
 # Lastly, write in the ranking inside each bar to aid in interpretation
 for rect in rects:
@@ -107,8 +107,8 @@ for rect in rects:
         align = 'right'
 
     # Center the text vertically in the bar
-    yloc = rect.get_y()+rect.get_height()/2.0
+    yloc = rect.get_y() + rect.get_height()/2.0
     ax1.text(xloc, yloc, rankStr, horizontalalignment=align,
-            verticalalignment='center', color=clr, weight='bold')
+             verticalalignment='center', color=clr, weight='bold')
 
 plt.show()

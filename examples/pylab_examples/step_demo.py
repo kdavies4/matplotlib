@@ -14,8 +14,8 @@ step(x, y, where='mid', label='mid')
 y -= 0.5
 step(x, y, where='post', label='post')
 
-y = ma.masked_where((y0>-0.15)&(y0<0.15), y - 0.5)
-step(x,y, label='masked (pre)')
+y = ma.masked_where((y0 > -0.15) & (y0 < 0.15), y - 0.5)
+step(x, y, label='masked (pre)')
 
 legend()
 
@@ -23,4 +23,3 @@ xlim(0, 7)
 ylim(-0.5, 4)
 
 show()
-

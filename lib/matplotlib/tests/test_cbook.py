@@ -43,7 +43,7 @@ def test_restrict_dict():
     assert_equal(d, {'foo': 'bar', 1: 2})
 
 
-class Test_delete_masked_points:
+class Test_delete_masked_points(object):
     def setUp(self):
         self.mask1 = [False, False, True, True, False, False]
         self.arr0 = np.arange(1.0, 7.0)
@@ -95,7 +95,7 @@ def test_allequal():
     assert(not cbook.allequal(('a', 'b')))
 
 
-class Test_boxplot_stats:
+class Test_boxplot_stats(object):
     def setup(self):
         np.random.seed(937)
         self.nrows = 37
@@ -121,8 +121,7 @@ class Test_boxplot_stats:
             'q1': 1.3597529879465153,
             'q3': 14.85246294739361,
             'whishi': 27.899688243699629,
-            'whislo': 0.042143774965502923,
-            'label': 0
+            'whislo': 0.042143774965502923
         }
 
         self.known_bootstrapped_ci = {
@@ -134,10 +133,6 @@ class Test_boxplot_stats:
             'whishi': 42.232049135969874,
             'whislo': 0.042143774965502923,
             'fliers': np.array([92.55467075, 87.03819018]),
-        }
-
-        self.known_res_with_labels = {
-            'label': 'Test1'
         }
 
         self.known_res_percentiles = {
@@ -229,11 +224,15 @@ class Test_boxplot_stats:
             )
 
     def test_results_withlabels(self):
-        labels = ['Test1', 2, 3, 4]
+        labels = ['Test1', 2, 'ardvark', 4]
         results = cbook.boxplot_stats(self.data, labels=labels)
         res = results[0]
-        for key in list(self.known_res_with_labels.keys()):
-            assert_equal(res[key], self.known_res_with_labels[key])
+        for lab, res in zip(labels, results):
+            assert_equal(res['label'], lab)
+
+        results = cbook.boxplot_stats(self.data)
+        for res in results:
+            assert('label' not in res)
 
     @raises(ValueError)
     def test_label_error(self):

@@ -707,6 +707,12 @@ class FontProperties(object):
              self.get_file())
         return hash(l)
 
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
+    def __ne__(self, other):
+        return hash(self) != hash(other)
+
     def __str__(self):
         return self.get_fontconfig_pattern()
 
@@ -952,7 +958,45 @@ def pickle_load(filename):
         data = pickle.load(fh)
     return data
 
-class FontManager:
+
+class TempCache(object):
+    """
+    A class to store temporary caches that are (a) not saved to disk
+    and (b) invalidated whenever certain font-related
+    rcParams---namely the family lookup lists---are changed or the
+    font cache is reloaded.  This avoids the expensive linear search
+    through all fonts every time a font is looked up.
+    """
+    # A list of rcparam names that, when changed, invalidated this
+    # cache.
+    invalidating_rcparams = (
+        'font.serif', 'font.sans-serif', 'font.cursive', 'font.fantasy',
+        'font.monospace')
+
+    def __init__(self):
+        self._lookup_cache = {}
+        self._last_rcParams = self.make_rcparams_key()
+
+    def make_rcparams_key(self):
+        return [id(fontManager)] + [
+            rcParams[param] for param in self.invalidating_rcparams]
+
+    def get(self, prop):
+        key = self.make_rcparams_key()
+        if key != self._last_rcParams:
+            self._lookup_cache = {}
+            self._last_rcParams = key
+        return self._lookup_cache.get(prop)
+
+    def set(self, prop, value):
+        key = self.make_rcparams_key()
+        if key != self._last_rcParams:
+            self._lookup_cache = {}
+            self._last_rcParams = key
+        self._lookup_cache[prop] = value
+
+
+class FontManager(object):
     """
     On import, the :class:`FontManager` singleton instance creates a
     list of TrueType fonts based on the font properties: name, style,
@@ -1015,9 +1059,6 @@ class FontManager:
         else:
             self.defaultFont['afm'] = None
 
-        self.ttf_lookup_cache = {}
-        self.afm_lookup_cache = {}
-
     def get_default_weight(self):
         """
         Return the default font weight.
@@ -1070,12 +1111,12 @@ class FontManager:
                 options = [x.lower() for x in options]
                 if family2 in options:
                     idx = options.index(family2)
-                    return ((0.1 * (float(idx) / len(options))) *
-                            (float(i) / float(len(families))))
+                    return ((0.1 * (idx / len(options))) *
+                            ((i + 1) / len(families)))
             elif family1 == family2:
                 # The score should be weighted by where in the
                 # list the font was found.
-                return float(i) / float(len(families))
+                return i / len(families)
         return 1.0
 
     def score_style(self, style1, style2):
@@ -1200,15 +1241,13 @@ class FontManager:
             return fname
 
         if fontext == 'afm':
-            font_cache = self.afm_lookup_cache
             fontlist = self.afmlist
         else:
-            font_cache = self.ttf_lookup_cache
             fontlist = self.ttflist
 
         if directory is None:
-            cached = font_cache.get(hash(prop))
-            if cached:
+            cached = _lookup_cache[fontext].get(prop)
+            if cached is not None:
                 return cached
 
         best_score = 1e64
@@ -1266,7 +1305,7 @@ class FontManager:
                 raise ValueError("No valid font could be found")
 
         if directory is None:
-            font_cache[hash(prop)] = result
+            _lookup_cache[fontext].set(prop, result)
         return result
 
 
@@ -1347,6 +1386,11 @@ else:
                 _fmcache = os.path.join(cachedir, 'fontList.cache')
 
     fontManager = None
+
+    _lookup_cache = {
+        'ttf': TempCache(),
+        'afm': TempCache()
+    }
 
     def _rebuild():
         global fontManager

@@ -26,7 +26,7 @@ if 0:
     verts = []
     for i in range(10):
         # a random line segment in inches
-        verts.append(zip(*inch*10*np.random.rand(2, random.randint(2,15))))
+        verts.append(zip(*inch*10*np.random.rand(2, random.randint(2, 15))))
     lc = collections.LineCollection(verts, axes=ax)
     ax.add_collection(lc)
 
@@ -37,7 +37,7 @@ ax.add_line(line)
 if 0:
     # test a patch
     # Not supported at present.
-    rect = patches.Rectangle( (1*cm, 1*cm), width=5*cm, height=2*cm, alpha=0.2, axes=ax)
+    rect = patches.Rectangle((1*cm, 1*cm), width=5*cm, height=2*cm, alpha=0.2, axes=ax)
     ax.add_patch(rect)
 
 
@@ -50,4 +50,3 @@ ax.set_ylim(-1*cm, 10*cm)
 ax.grid(True)
 ax.set_title("Artists with units")
 plt.show()
-

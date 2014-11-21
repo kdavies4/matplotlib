@@ -11,15 +11,15 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCan
 from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3 as NavigationToolbar
 
 win = Gtk.Window()
-win.connect("delete-event", Gtk.main_quit )
-win.set_default_size(400,300)
+win.connect("delete-event", Gtk.main_quit)
+win.set_default_size(400, 300)
 win.set_title("Embedding in GTK")
 
-f = Figure(figsize=(5,4), dpi=100)
-a = f.add_subplot(1,1,1)
-t = arange(0.0,3.0,0.01)
+f = Figure(figsize=(5, 4), dpi=100)
+a = f.add_subplot(1, 1, 1)
+t = arange(0.0, 3.0, 0.01)
 s = sin(2*pi*t)
-a.plot(t,s)
+a.plot(t, s)
 
 vbox = Gtk.VBox()
 win.add(vbox)
@@ -34,4 +34,3 @@ vbox.pack_start(toolbar, False, False, 0)
 
 win.show_all()
 Gtk.main()
-

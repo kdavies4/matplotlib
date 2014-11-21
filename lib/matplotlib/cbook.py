@@ -10,7 +10,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import six
-from six.moves import xrange
+from six.moves import xrange, zip
+from itertools import repeat
 
 import datetime
 import errno
@@ -120,11 +121,14 @@ def warn_deprecated(
     obj_type : str, optional
         The object type being deprecated.
 
-    Example
-    -------
-    # To warn of the deprecation of "matplotlib.name_of_module"
-    warn_deprecated('1.4.0', name='matplotlib.name_of_module',
-                    obj_type='module')
+    Examples
+    --------
+
+        Basic example::
+
+            # To warn of the deprecation of "matplotlib.name_of_module"
+            warn_deprecated('1.4.0', name='matplotlib.name_of_module',
+                            obj_type='module')
 
     """
     message = _generate_deprecation_message(
@@ -172,11 +176,14 @@ def deprecated(since, message='', name='', alternative='', pending=False,
         If True, uses a PendingDeprecationWarning instead of a
         DeprecationWarning.
 
-    Example
-    -------
-    @deprecated('1.4.0')
-    def the_function_to_deprecate():
-        pass
+    Examples
+    --------
+
+        Basic example::
+
+            @deprecated('1.4.0')
+            def the_function_to_deprecate():
+                pass
 
     """
     def deprecate(func, message=message, name=name, alternative=alternative,
@@ -427,7 +434,7 @@ class _BoundMethodProxy(object):
         return not self.__eq__(other)
 
 
-class CallbackRegistry:
+class CallbackRegistry(object):
     """
     Handle registering and disconnecting for a set of signals and
     callbacks:
@@ -465,13 +472,7 @@ class CallbackRegistry:
     `"Mindtrove" blog
     <http://mindtrove.info/articles/python-weak-references/>`_.
     """
-    def __init__(self, *args):
-        if len(args):
-            warn_deprecated(
-                '1.3',
-                message="CallbackRegistry no longer requires a list of "
-                        "callback types. Ignoring arguments. *args will "
-                        "be removed in 1.5")
+    def __init__(self):
         self.callbacks = dict()
         self._cid = 0
         self._func_cid_map = {}
@@ -634,7 +635,7 @@ def strip_math(s):
     return s
 
 
-class Bunch:
+class Bunch(object):
     """
     Often we want to just collect a bunch of stuff together, naming each
     item of the bunch; a dictionary's OK for that, but a small do- nothing
@@ -840,7 +841,7 @@ def flatten(seq, scalarp=is_scalar_or_string):
                 yield subitem
 
 
-class Sorter:
+class Sorter(object):
     """
     Sort by attribute or item
 
@@ -948,7 +949,7 @@ def soundex(name, len=4):
     return (sndx + (len * '0'))[:len]
 
 
-class Null:
+class Null(object):
     """ Null objects always and reliably "do nothing." """
 
     def __init__(self, *args, **kwargs):
@@ -1001,7 +1002,7 @@ def mkdirs(newdir, mode=0o777):
             raise
 
 
-class GetRealpathAndStat:
+class GetRealpathAndStat(object):
     def __init__(self):
         self._cache = {}
 
@@ -1029,7 +1030,7 @@ def dict_delall(d, keys):
             pass
 
 
-class RingBuffer:
+class RingBuffer(object):
     """ class that implements a not-yet-full buffer """
     def __init__(self, size_max):
         self.max = size_max
@@ -1492,7 +1493,7 @@ def safe_masked_invalid(x):
     return xm
 
 
-class MemoryMonitor:
+class MemoryMonitor(object):
     def __init__(self, nmax=20000):
         self._nmax = nmax
         self._mem = np.zeros((self._nmax,), np.int32)
@@ -1737,7 +1738,7 @@ def simple_linear_interpolation(a, steps):
     if steps == 1:
         return a
 
-    steps = np.floor(steps)
+    steps = int(np.floor(steps))
     new_length = ((len(a) - 1) * steps) + 1
     new_shape = list(a.shape)
     new_shape[0] = new_length
@@ -1747,7 +1748,6 @@ def simple_linear_interpolation(a, steps):
     a0 = a[0:-1]
     a1 = a[1:]
     delta = ((a1 - a0) / steps)
-    steps = int(steps)
     for i in range(1, steps):
         result[i::steps] = delta * i + a0
     result[steps::steps] = a1
@@ -1882,7 +1882,8 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
 
     Returns
     -------
-    bxpstats : A list of dictionaries containing the results for each column
+    bxpstats : list of dict
+        A list of dictionaries containing the results for each column
         of data. Keys of each dictionary are the following:
 
         ========   ===================================
@@ -1890,7 +1891,7 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
         ========   ===================================
         label      tick label for the boxplot
         mean       arithemetic mean value
-        median     50th percentile
+        med        50th percentile
         q1         first quartile (25th percentile)
         q3         third quartile (75th percentile)
         cilo       lower notch around the median
@@ -1905,11 +1906,13 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
     Non-bootstrapping approach to confidence interval uses Gaussian-based
     asymptotic approximation:
 
-    .. math:: \mathrm{med} \pm 1.57 \times \frac{\mathrm{iqr}}{\sqrt{N}}
+    .. math::
+
+        \mathrm{med} \pm 1.57 \\times \\frac{\mathrm{iqr}}{\sqrt{N}}
 
     General approach from:
     McGill, R., Tukey, J.W., and Larsen, W.A. (1978) "Variations of
-        Boxplots", The American Statistician, 32:12-16.
+    Boxplots", The American Statistician, 32:12-16.
 
     '''
 
@@ -1944,45 +1947,50 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
     bxpstats = []
 
     # convert X to a list of lists
-    if hasattr(X, 'shape'):
-        # one item
-        if len(X.shape) == 1:
-            if hasattr(X[0], 'shape'):
-                X = list(X)
-            else:
-                X = [X, ]
-
-        # several items
-        elif len(X.shape) == 2:
-            nrows, ncols = X.shape
-            if nrows == 1:
-                X = [X]
-            elif ncols == 1:
-                X = [X.ravel()]
-            else:
-                X = [X[:, i] for i in xrange(ncols)]
-        else:
-            raise ValueError("input `X` must have 2 or fewer dimensions")
-
-    if not hasattr(X[0], '__len__'):
-        X = [X]
+    X = _reshape_2D(X)
 
     ncols = len(X)
     if labels is None:
-        labels = [str(i) for i in range(ncols)]
+        labels = repeat(None)
     elif len(labels) != ncols:
         raise ValueError("Dimensions of labels and X must be compatible")
 
+    input_whis = whis
     for ii, (x, label) in enumerate(zip(X, labels), start=0):
+
         # empty dict
         stats = {}
-        stats['label'] = label
+        if label is not None:
+            stats['label'] = label
+
+        # restore whis to the input values in case it got changed in the loop
+        whis = input_whis
+
+        # note tricksyness, append up here and then mutate below
+        bxpstats.append(stats)
+
+        # if empty, bail
+        if len(x) == 0:
+            stats['fliers'] = np.array([])
+            stats['mean'] = np.nan
+            stats['med'] = np.nan
+            stats['q1'] = np.nan
+            stats['q3'] = np.nan
+            stats['cilo'] = np.nan
+            stats['ciho'] = np.nan
+            stats['whislo'] = np.nan
+            stats['whishi'] = np.nan
+            stats['med'] = np.nan
+            continue
+
+        # up-convert to an array, just to be safe
+        x = np.asarray(x)
 
         # arithmetic mean
         stats['mean'] = np.mean(x)
 
         # medians and quartiles
-        q1, med, q3 =  np.percentile(x, [25, 50, 75])
+        q1, med, q3 = np.percentile(x, [25, 50, 75])
 
         # interquartile range
         stats['iqr'] = q3 - q1
@@ -2004,7 +2012,7 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
                 hival = np.max(x)
             else:
                 whismsg = ('whis must be a float, valid string, or '
-                          'list of percentiles')
+                           'list of percentiles')
                 raise ValueError(whismsg)
         else:
             loval = np.percentile(x, whis[0])
@@ -2030,9 +2038,9 @@ def boxplot_stats(X, whis=1.5, bootstrap=None, labels=None):
             np.compress(x > stats['whishi'], x)
         ])
 
-        # add in teh remaining stats and append to final output
+        # add in the remaining stats
         stats['q1'], stats['med'], stats['q3'] = q1, med, q3
-        bxpstats.append(stats)
+
 
     return bxpstats
 
@@ -2155,6 +2163,114 @@ def is_math_text(s):
     even_dollars = (dollar_count > 0 and dollar_count % 2 == 0)
 
     return even_dollars
+
+
+def _reshape_2D(X):
+    """
+    Converts a non-empty list or an ndarray of two or fewer dimensions
+    into a list of iterable objects so that in
+
+        for v in _reshape_2D(X):
+
+    v is iterable and can be used to instantiate a 1D array.
+    """
+    if hasattr(X, 'shape'):
+        # one item
+        if len(X.shape) == 1:
+            if hasattr(X[0], 'shape'):
+                X = list(X)
+            else:
+                X = [X, ]
+
+        # several items
+        elif len(X.shape) == 2:
+            nrows, ncols = X.shape
+            if nrows == 1:
+                X = [X]
+            elif ncols == 1:
+                X = [X.ravel()]
+            else:
+                X = [X[:, i] for i in xrange(ncols)]
+        else:
+            raise ValueError("input `X` must have 2 or fewer dimensions")
+
+    if not hasattr(X[0], '__len__'):
+        X = [X]
+    else:
+        X = [np.ravel(x) for x in X]
+
+    return X
+
+
+def violin_stats(X, method, points=100):
+    '''
+    Returns a list of dictionaries of data which can be used to draw a series
+    of violin plots. See the `Returns` section below to view the required keys
+    of the dictionary. Users can skip this function and pass a user-defined set
+    of dictionaries to the `axes.vplot` method instead of using MPL to do the
+    calculations.
+
+    Parameters
+    ----------
+    X : array-like
+        Sample data that will be used to produce the gaussian kernel density
+        estimates. Must have 2 or fewer dimensions.
+
+    method : callable
+        The method used to calculate the kernel density estimate for each
+        column of data. When called via `method(v, coords)`, it should
+        return a vector of the values of the KDE evaluated at the values
+        specified in coords.
+
+    points : scalar, default = 100
+        Defines the number of points to evaluate each of the gaussian kernel
+        density estimates at.
+
+    Returns
+    -------
+
+    A list of dictionaries containing the results for each column of data.
+    The dictionaries contain at least the following:
+
+        - coords: A list of scalars containing the coordinates this particular
+          kernel density estimate was evaluated at.
+        - vals: A list of scalars containing the values of the kernel density
+          estimate at each of the coordinates given in `coords`.
+        - mean: The mean value for this column of data.
+        - median: The median value for this column of data.
+        - min: The minimum value for this column of data.
+        - max: The maximum value for this column of data.
+    '''
+
+    # List of dictionaries describing each of the violins.
+    vpstats = []
+
+    # Want X to be a list of data sequences
+    X = _reshape_2D(X)
+
+    for x in X:
+        # Dictionary of results for this distribution
+        stats = {}
+
+        # Calculate basic stats for the distribution
+        min_val = np.min(x)
+        max_val = np.max(x)
+
+        # Evaluate the kernel density estimate
+        coords = np.linspace(min_val, max_val, points)
+        stats['vals'] = method(x, coords)
+        stats['coords'] = coords
+
+        # Store additional statistics for this distribution
+        stats['mean'] = np.mean(x)
+        stats['median'] = np.median(x)
+        stats['min'] = min_val
+        stats['max'] = max_val
+
+        # Append to output
+        vpstats.append(stats)
+
+    return vpstats
 
 
 class _NestedClassGetter(object):

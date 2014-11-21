@@ -55,7 +55,7 @@ get:
 Aliases:
 
   To reduce keystrokes in interactive mode, a number of properties
-  have short aliases, eg 'lw' for 'linewidth' and 'mec' for
+  have short aliases, e.g., 'lw' for 'linewidth' and 'mec' for
   'markeredgecolor'.  When calling set or get in introspection mode,
   these properties will be listed as 'fullname or aliasname', as in
 
@@ -68,7 +68,7 @@ from __future__ import print_function
 from pylab import *
 
 
-x = arange(0,1.0,0.01)
+x = arange(0, 1.0, 0.01)
 y1 = sin(2*pi*x)
 y2 = sin(4*pi*x)
 lines = plot(x, y1, x, y2)
@@ -78,20 +78,20 @@ setp(l1, linewidth=2, color='r')  # line1 is thick and red
 setp(l2, linewidth=1, color='g')  # line2 is thicker and green
 
 
-print ('Line setters')
+print('Line setters')
 setp(l1)
-print ('Line getters')
+print('Line getters')
 getp(l1)
 
-print ('Rectangle setters')
+print('Rectangle setters')
 setp(gca().patch)
-print ('Rectangle getters')
+print('Rectangle getters')
 getp(gca().patch)
 
 t = title('Hi mom')
-print ('Text setters')
+print('Text setters')
 setp(t)
-print ('Text getters')
+print('Text getters')
 getp(t)
 
 show()

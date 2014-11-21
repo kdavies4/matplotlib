@@ -45,19 +45,25 @@ def _process_text_args(override, fontdict=None, **kwargs):
 # Extracted from Text's method to serve as a function
 def get_rotation(rotation):
     """
-    Return the text angle as float.
+    Return the text angle as float. The returned
+    angle is between 0 and 360 deg.
 
     *rotation* may be 'horizontal', 'vertical', or a numeric value in degrees.
     """
-    if rotation in ('horizontal', None):
-        angle = 0.
-    elif rotation == 'vertical':
-        angle = 90.
-    else:
+    try:
         angle = float(rotation)
+    except (ValueError, TypeError):
+        isString = isinstance(rotation, six.string_types)
+        if ((isString and rotation == 'horizontal') or rotation is None):
+            angle = 0.
+        elif (isString and rotation == 'vertical'):
+            angle = 90.
+        else:
+            raise ValueError("rotation is {0} expected either 'horizontal'"
+                             " 'vertical', numeric value or"
+                             "None".format(rotation))
+
     return angle % 360
-
-
 # these are not available for the object inspector until after the
 # class is build so we define an initial set here for the init
 # function and they will be overridden after object defn
@@ -83,12 +89,12 @@ docstring.interpd.update(Text="""
     linespacing                float
     lod                        [True | False]
     multialignment             ['left' | 'right' | 'center' ]
-    name or fontname           string eg,
+    name or fontname           string e.g.,
                                ['Sans' | 'Courier' | 'Helvetica' ...]
     position                   (x,y)
     rotation                   [ angle in degrees 'vertical' | 'horizontal'
     rotation_mode              [ None | 'anchor']
-    size or fontsize           [size in points | relative size eg 'smaller',
+    size or fontsize           [size in points | relative size e.g., 'smaller',
                                                                   'x-large']
     style or fontstyle         [ 'normal' | 'italic' | 'oblique']
     text                       string
@@ -437,7 +443,7 @@ class Text(Artist):
     def set_bbox(self, rectprops):
         """
         Draw a bounding box around self.  rectprops are any settable
-        properties for a rectangle, eg facecolor='red', alpha=0.5.
+        properties for a rectangle, e.g., facecolor='red', alpha=0.5.
 
           t.set_bbox(dict(facecolor='red', alpha=0.5))
 
@@ -564,6 +570,7 @@ class Text(Artist):
             if not np.isfinite(x) or not np.isfinite(y):
                 continue
 
+            mtext = self if len(info) == 1 else None
             x = x + posx
             y = y + posy
             if renderer.flipy():
@@ -577,11 +584,11 @@ class Text(Artist):
 
             if rcParams['text.usetex']:
                 renderer.draw_tex(gc, x, y, clean_line,
-                                  self._fontproperties, angle, mtext=self)
+                                  self._fontproperties, angle, mtext=mtext)
             else:
                 renderer.draw_text(gc, x, y, clean_line,
                                    self._fontproperties, angle,
-                                   ismath=ismath, mtext=self)
+                                   ismath=ismath, mtext=mtext)
 
         gc.restore()
         renderer.close_group('text')
@@ -676,7 +683,7 @@ class Text(Artist):
         Return a hashable tuple of properties.
 
         Not intended to be human readable, but useful for backends who
-        want to cache derived information about text (eg layouts) and
+        want to cache derived information about text (e.g., layouts) and
         need to know if the text has changed.
         """
         x, y = self.get_position()
@@ -1029,7 +1036,7 @@ class TextWithDash(Text):
     *dashrotation* specifies the rotation of the dash, and should
     generally stay *None*. In this case
     :meth:`~matplotlib.text.TextWithDash.get_dashrotation` returns
-    :meth:`~matplotlib.text.Text.get_rotation`.  (I.e., the dash takes
+    :meth:`~matplotlib.text.Text.get_rotation`.  (i.e., the dash takes
     its rotation from the text's rotation). Because the text center is
     projected onto the dash, major deviations in the rotation cause
     what may be considered visually unappealing results.
@@ -1120,7 +1127,7 @@ class TextWithDash(Text):
         Return a hashable tuple of properties.
 
         Not intended to be human readable, but useful for backends who
-        want to cache derived information about text (eg layouts) and
+        want to cache derived information about text (e.g., layouts) and
         need to know if the text has changed.
         """
         props = [p for p in Text.get_prop_tup(self)]
@@ -1646,7 +1653,7 @@ class _AnnotationBase(object):
     @cbook.deprecated('1.4', message='Use `xyann` instead',
                       name='xytext', alternative='xyann')
     def xytext(self):
-        self.xyann
+        return self.xyann
 
     @xytext.setter
     @cbook.deprecated('1.4', message='Use `xyann` instead',
@@ -1661,6 +1668,10 @@ class Annotation(Text, _AnnotationBase):
     in the figure, such as :class:`~matplotlib.figure.Figure`,
     :class:`~matplotlib.axes.Axes`,
     :class:`~matplotlib.patches.Rectangle`, etc., easier.
+
+    Annotate the *x*, *y* point *xy* with text *s* at *x*, *y*
+    location *xytext*.  (If *xytext* = *None*, defaults to *xy*,
+    and if *textcoords* = *None*, defaults to *xycoords*).
     """
     def __str__(self):
         return "Annotation(%g,%g,%s)" % (self.xy[0],
@@ -1676,18 +1687,15 @@ class Annotation(Text, _AnnotationBase):
                  annotation_clip=None,
                  **kwargs):
         """
-        Annotate the *x*, *y* point *xy* with text *s* at *x*, *y*
-        location *xytext*.  (If *xytext* = *None*, defaults to *xy*,
-        and if *textcoords* = *None*, defaults to *xycoords*).
-
         *arrowprops*, if not *None*, is a dictionary of line properties
         (see :class:`matplotlib.lines.Line2D`) for the arrow that connects
         annotation to the point.
 
-        If the dictionary has a key *arrowstyle*, a FancyArrowPatch
-        instance is created with the given dictionary and is
-        drawn. Otherwise, a YAArow patch instance is created and
-        drawn. Valid keys for YAArow are
+        If the dictionary has a key *arrowstyle*, a
+        `~matplotlib.patches.FancyArrowPatch` instance is created with
+        the given dictionary and is drawn. Otherwise, a
+        `~matplotlib.patches.YAArrow` patch instance is created and
+        drawn. Valid keys for `~matplotlib.patches.YAArrow` are:
 
 
         =========   ===========================================================
@@ -1701,12 +1709,12 @@ class Annotation(Text, _AnnotationBase):
                     annotated.  If *d* is the distance between the text and
                     annotated point, shrink will shorten the arrow so the tip
                     and base are shink percent of the distance *d* away from
-                    the endpoints.  ie, ``shrink=0.05 is 5%%``
+                    the endpoints.  i.e., ``shrink=0.05 is 5%%``
         ?           any key for :class:`matplotlib.patches.polygon`
         =========   ===========================================================
 
 
-        Valid keys for FancyArrowPatch are
+        Valid keys for `~matplotlib.patches.FancyArrowPatch` are:
 
 
         ===============  ======================================================
@@ -1726,7 +1734,8 @@ class Annotation(Text, _AnnotationBase):
 
 
         *xycoords* and *textcoords* are strings that indicate the
-        coordinates of *xy* and *xytext*.
+        coordinates of *xy* and *xytext*, and may be one of the
+        following values:
 
         =================   ===================================================
         Property            Description
@@ -1762,18 +1771,16 @@ class Annotation(Text, _AnnotationBase):
         :class:`~matplotlib.artist.Artist`. See
         :ref:`plotting-guide-annotation` for more details.
 
-
         The *annotation_clip* attribute controls the visibility of the
-        annotation when it goes outside the axes area. If True, the
+        annotation when it goes outside the axes area. If `True`, the
         annotation will only be drawn when the *xy* is inside the
-        axes. If False, the annotation will always be drawn regardless
-        of its position.  The default is *None*, which behave as True
-        only if *xycoords* is"data".
+        axes. If `False`, the annotation will always be drawn
+        regardless of its position.  The default is `None`, which
+        behave as `True` only if *xycoords* is "data".
 
-        Additional kwargs are Text properties:
+        Additional kwargs are `~matplotlib.text.Text` properties:
 
         %(Text)s
-
         """
 
         _AnnotationBase.__init__(self,

@@ -66,9 +66,9 @@ mpl_packages = [
     setupext.Numpy(),
     setupext.Six(),
     setupext.Dateutil(),
+    setupext.Pytz(),
     setupext.Tornado(),
     setupext.Pyparsing(),
-    setupext.CXX(),
     setupext.LibAgg(),
     setupext.FreeType(),
     setupext.FT2Font(),
@@ -85,11 +85,13 @@ mpl_packages = [
     setupext.SampleData(),
     setupext.Toolkits(),
     setupext.Tests(),
+    setupext.Toolkits_Tests(),
     'Optional backend extensions',
     # These backends are listed in order of preference, the first
     # being the most preferred.  The first one that looks like it will
     # work will be selected as the default backend.
     setupext.BackendMacOSX(),
+    setupext.BackendQt5(),
     setupext.BackendQt4(),
     setupext.BackendGtk3Agg(),
     setupext.BackendGtk3Cairo(),

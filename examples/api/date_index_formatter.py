@@ -1,5 +1,5 @@
 """
-When plotting time series, eg financial time series, one often wants
+When plotting time series, e.g., financial time series, one often wants
 to leave out days on which there is no data, eh weekends.  The example
 below shows how to use an 'index formatter' to achieve the desired plot
 """
@@ -11,7 +11,7 @@ import matplotlib.cbook as cbook
 import matplotlib.ticker as ticker
 
 datafile = cbook.get_sample_data('aapl.csv', asfileobj=False)
-print ('loading %s' % datafile)
+print('loading %s' % datafile)
 r = mlab.csv2rec(datafile)
 
 r.sort()
@@ -27,8 +27,9 @@ fig.autofmt_xdate()
 N = len(r)
 ind = np.arange(N)  # the evenly spaced plot indices
 
+
 def format_date(x, pos=None):
-    thisind = np.clip(int(x+0.5), 0, N-1)
+    thisind = np.clip(int(x + 0.5), 0, N - 1)
     return r.date[thisind].strftime('%Y-%m-%d')
 
 fig, ax = plt.subplots()

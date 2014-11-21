@@ -9,7 +9,7 @@ from matplotlib.transforms import IdentityTransform
 import matplotlib.patches as mpatches
 
 from matplotlib.offsetbox import AnnotationBbox,\
-     AnchoredOffsetbox, AuxTransformBox
+    AnchoredOffsetbox, AuxTransformBox
 
 from matplotlib.cbook import get_sample_data
 
@@ -23,6 +23,7 @@ class PathClippedImagePatch(mpatches.PathPatch):
 
     FIXME : The result is currently dpi dependent.
     """
+
     def __init__(self, path, bbox_image, **kwargs):
         mpatches.PathPatch.__init__(self, path, **kwargs)
         self._init_bbox_image(bbox_image)
@@ -30,11 +31,11 @@ class PathClippedImagePatch(mpatches.PathPatch):
     def set_facecolor(self, color):
         """simply ignore facecolor"""
         mpatches.PathPatch.set_facecolor(self, "none")
-    
+
     def _init_bbox_image(self, im):
 
         bbox_image = BboxImage(self.get_window_extent,
-                               norm = None,
+                               norm=None,
                                origin=None,
                                )
         bbox_image.set_transform(IdentityTransform())
@@ -43,7 +44,6 @@ class PathClippedImagePatch(mpatches.PathPatch):
         self.bbox_image = bbox_image
 
     def draw(self, renderer=None):
-
 
         # the clip path must be updated every draw. any solution? -JJ
         self.bbox_image.set_clip_path(self._path, self.get_transform())
@@ -55,7 +55,7 @@ class PathClippedImagePatch(mpatches.PathPatch):
 if 1:
 
     usetex = plt.rcParams["text.usetex"]
-    
+
     fig = plt.figure(1)
 
     # EXAMPLE 1
@@ -86,13 +86,13 @@ if 1:
         r = r"\mbox{textpath supports mathtext \& \TeX}"
     else:
         r = r"textpath supports mathtext & TeX"
-        
+
     text_path = TextPath((0, 0), r,
                          size=20, usetex=usetex)
-        
+
     p1 = PathPatch(text_path, ec="w", lw=3, fc="w", alpha=0.9,
                    transform=IdentityTransform())
-    p2 = PathPatch(text_path, ec="none", fc="k", 
+    p2 = PathPatch(text_path, ec="none", fc="k",
                    transform=IdentityTransform())
 
     offsetbox2 = AuxTransformBox(IdentityTransform())
@@ -102,22 +102,20 @@ if 1:
     ab = AnnotationBbox(offsetbox2, (0.95, 0.05),
                         xycoords='axes fraction',
                         boxcoords="offset points",
-                        box_alignment=(1.,0.),
+                        box_alignment=(1., 0.),
                         frameon=False
                         )
     ax.add_artist(ab)
 
-    ax.imshow([[0,1,2],[1,2,3]], cmap=plt.cm.gist_gray_r,
+    ax.imshow([[0, 1, 2], [1, 2, 3]], cmap=plt.cm.gist_gray_r,
               interpolation="bilinear",
               aspect="auto")
-
-
 
     # EXAMPLE 2
 
     ax = plt.subplot(212)
 
-    arr = np.arange(256).reshape(1,256)/256.
+    arr = np.arange(256).reshape(1, 256)/256.
 
     if usetex:
         s = r"$\displaystyle\left[\sum_{n=1}^\infty\frac{-e^{i\pi}}{2^n}\right]$!"
@@ -130,7 +128,6 @@ if 1:
     shadow1 = mpatches.Shadow(text_patch, 1, -1, props=dict(fc="none", ec="0.6", lw=3))
     shadow2 = mpatches.Shadow(text_patch, 1, -1, props=dict(fc="0.3", ec="none"))
 
-
     # make offset box
     offsetbox = AuxTransformBox(IdentityTransform())
     offsetbox.add_artist(shadow1)
@@ -141,7 +138,7 @@ if 1:
     ab = AnnotationBbox(offsetbox, (0.5, 0.5),
                         xycoords='data',
                         boxcoords="offset points",
-                        box_alignment=(0.5,0.5),
+                        box_alignment=(0.5, 0.5),
                         )
     #text_path.set_size(10)
 
@@ -149,7 +146,6 @@ if 1:
 
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-
 
     plt.draw()
     plt.show()

@@ -10,7 +10,7 @@ fig = figure()
 fig.subplots_adjust(bottom=0.2)
 
 ax = fig.add_subplot(111, axisbg='y')
-ax.plot([1,2,3], 'r')
+ax.plot([1, 2, 3], 'r')
 x = np.arange(0.0, 3.0, 0.1)
 
 ax.grid(True)
@@ -24,6 +24,4 @@ ax.legend([r"$\sqrt{x^2}$"])
 
 ax.set_title(r'$\Delta_i^j \hspace{0.4} \mathrm{versus} \hspace{0.4} \Delta_{i+1}^j$', fontsize=20)
 
-
 show()
-

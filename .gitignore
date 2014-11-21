@@ -1,4 +1,8 @@
 #########################################
+# OS-specific temporary and backup files
+.DS_Store
+
+#########################################
 # Editor temporary/working/backup files #
 .#*
 [#]*#
@@ -8,6 +12,7 @@
 *.kdev4
 .project
 .pydevproject
+.swp
 
 # Compiled source #
 ###################
@@ -53,10 +58,12 @@ doc/examples
 doc/_templates/gallery.html
 doc/users/installing.rst
 doc/_static/matplotlibrc
+doc/pyplots/tex_demo.png
 lib/dateutil
 examples/*/*.pdf
 examples/*/*.png
 examples/tests/*
 !examples/tests/backend_driver.py
 texput.log
+texput.aux
 result_images

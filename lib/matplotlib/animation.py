@@ -226,6 +226,7 @@ class MovieWriter(object):
     def cleanup(self):
         'Clean-up and collect the process used to write the movie file.'
         out, err = self._proc.communicate()
+        self._frame_sink().close()
         verbose.report('MovieWriter -- '
                        'Command stdout:\n%s' % out, level='debug')
         verbose.report('MovieWriter -- '
@@ -247,10 +248,11 @@ class MovieWriter(object):
         running the commandline tool.
         '''
         try:
-            subprocess.Popen(cls.bin_path(),
+            p = subprocess.Popen(cls.bin_path(),
                              shell=False,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
+            p.communicate()
             return True
         except OSError:
             return False
@@ -326,6 +328,30 @@ class FileMovieWriter(MovieWriter):
         # because it will no longer be referenced and will be gc-ed.
         return open(fname, 'wb')
 
+    def grab_frame(self, **savefig_kwargs):
+        '''
+        Grab the image information from the figure and save as a movie frame.
+        All keyword arguments in savefig_kwargs are passed on to the 'savefig'
+        command that saves the figure.
+        '''
+        #Overloaded to explicitly close temp file.
+        verbose.report('MovieWriter.grab_frame: Grabbing frame.',
+                       level='debug')
+        try:
+            # Tell the figure to save its data to the sink, using the
+            # frame format and dpi.
+            myframesink = self._frame_sink()
+            self.fig.savefig(myframesink, format=self.frame_format,
+                             dpi=self.dpi, **savefig_kwargs)
+            myframesink.close()
+
+        except RuntimeError:
+            out, err = self._proc.communicate()
+            verbose.report('MovieWriter -- Error '
+                           'running proc:\n%s\n%s' % (out,
+                                                      err), level='helpful')
+            raise
+
     def finish(self):
         # Call run here now that all frame grabbing is done. All temp files
         # are available to be assembled.
@@ -355,7 +381,7 @@ class FileMovieWriter(MovieWriter):
 
 # Base class of ffmpeg information. Has the config keys and the common set
 # of arguments that controls the *output* side of things.
-class FFMpegBase:
+class FFMpegBase(object):
     exec_key = 'animation.ffmpeg_path'
     args_key = 'animation.ffmpeg_args'
 
@@ -425,7 +451,7 @@ class AVConvFileWriter(AVConvBase, FFMpegFileWriter):
 
 # Base class of mencoder information. Contains configuration key information
 # as well as arguments for controlling *output*
-class MencoderBase:
+class MencoderBase(object):
     exec_key = 'animation.mencoder_path'
     args_key = 'animation.mencoder_args'
 
@@ -484,7 +510,7 @@ class MencoderFileWriter(FileMovieWriter, MencoderBase):
 
 
 # Base class for animated GIFs with convert utility
-class ImageMagickBase:
+class ImageMagickBase(object):
     exec_key = 'animation.convert_path'
     args_key = 'animation.convert_args'
 
@@ -685,7 +711,7 @@ class Animation(object):
             bitrate = rcParams['animation.bitrate']
 
         all_anim = [self]
-        if not extra_anim is None:
+        if extra_anim is not None:
             all_anim.extend(anim
                             for anim
                             in extra_anim if anim._fig is self._fig)
@@ -702,7 +728,9 @@ class Animation(object):
                 warnings.warn("MovieWriter %s unavailable" % writer)
 
                 try:
-                    writer = writers.list()[0]
+                    writer = writers[writers.list()[0]](fps, codec, bitrate,
+                                                        extra_args=extra_args,
+                                                        metadata=metadata)
                 except IndexError:
                     raise ValueError("Cannot save animation: no writers are "
                                      "available. Please install mencoder or "
@@ -975,6 +1003,13 @@ class FuncAnimation(TimedAnimation):
 
     If blit=True, *func* and *init_func* should return an iterable of
     drawables to clear.
+
+    *kwargs* include *repeat*, *repeat_delay*, and *interval*:
+    *interval* draws a new frame every *interval* milliseconds.
+    *repeat* controls whether the animation should repeat when the sequence
+    of frames is completed.
+    *repeat_delay* optionally adds a delay in milliseconds before repeating
+    the animation.
     '''
     def __init__(self, fig, func, frames=None, init_func=None, fargs=None,
                  save_count=None, **kwargs):

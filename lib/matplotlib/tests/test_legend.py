@@ -3,8 +3,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 from six.moves import xrange
-
-import mock
+try:
+    # mock in python 3.3+
+    from unittest import mock
+except ImportError:
+    import mock
 from nose.tools import assert_equal
 import numpy as np
 
@@ -59,6 +62,18 @@ def test_various_labels():
     ax.plot(np.linspace(4, 4.1), 'o', label='D\xe9velopp\xe9s')
     ax.plot(list(xrange(4, 1, -1)), 'o', label='__nolegend__')
     ax.legend(numpoints=1, loc=0)
+
+
+@image_comparison(baseline_images=['legend_labels_first'], extensions=['png'],
+                  remove_text=True)
+def test_labels_first():
+    # test labels to left of markers
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(np.arange(10), '-o', label=1)
+    ax.plot(np.ones(10)*5, ':x', label="x")
+    ax.plot(np.arange(20, 10, -1), 'd', label="diamond")
+    ax.legend(loc=0, markerfirst=False)
 
 
 @image_comparison(baseline_images=['fancy'], remove_text=True)
@@ -213,6 +228,22 @@ class TestLegendFunction(object):
             handles_labels.return_value = lines, ['hello world']
             plt.legend(handler_map={'1': 2})
         handles_labels.assert_called_with({'1': 2})
+
+
+@image_comparison(baseline_images=['legend_stackplot'], extensions=['png'])
+def test_legend_stackplot():
+    '''test legend for PolyCollection using stackplot'''
+    # related to #1341, #1943, and PR #3303
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    x = np.linspace(0, 10, 10)
+    y1 = 1.0 * x
+    y2 = 2.0 * x + 1
+    y3 = 3.0 * x + 2
+    ax.stackplot(x, y1, y2, y3, labels=['y1', 'y2', 'y3'])
+    ax.set_xlim((0, 10))
+    ax.set_ylim((0, 70))
+    ax.legend(loc=0)
 
 
 if __name__ == '__main__':
